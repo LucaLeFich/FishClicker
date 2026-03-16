@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FishClicker</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="header">
+  <h1>🐟 FishClicker</h1>
+  <div>
+    <div id="fish-count">0 fish</div>
+    <div id="fish-per-sec">0 fish / sec</div>
+  </div>
+</div>
+
+<div id="main">
+
+  <!-- Left: clicker -->
+  <div id="clicker-panel">
+    <div id="fish-stats">
+      <div class="total" id="stat-total">0</div>
+      <div class="sub">fish collected</div>
+      <div class="sub" id="stat-alltime" style="margin-top:4px">all time: 0</div>
+    </div>
+    <button id="fish-btn" title="Click to catch fish!">🐟</button>
+    <div id="click-power">Each click: <span id="click-val">1</span> fish</div>
+    <div id="milestone-ticker"></div>
+  </div>
+
+  <!-- Middle: upgrades -->
+  <div id="upgrades-panel">
+    <h2>Upgrades</h2>
+    <div id="upgrades-list"></div>
+  </div>
+
+  <!-- Right: buildings -->
+  <div id="buildings-panel">
+    <div id="buildings-header">
+      <h2>Buildings</h2>
+      <div id="qty-bar">
+        <button class="qty-btn active" data-qty="1">×1</button>
+        <button class="qty-btn" data-qty="10">×10</button>
+        <button class="qty-btn" data-qty="50">×50</button>
+        <button class="qty-btn" data-qty="100">×100</button>
+        <button class="qty-btn" data-qty="max">Max</button>
+      </div>
+    </div>
+    <div id="buildings-list"></div>
+  </div>
+
+</div>
+
+<div id="news"><span id="news-text">Welcome to FishClicker! Click the fish to start your fishing empire...</span></div>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────────
+const state = {
+  fish: 0,
+  allTimeFish: 0,
+  clickPower: 1,
+  fishPerSec: 0,
+  buyQty: 1,       // 1 | 10 | 50 | 100 | 'max'
+};
+
+// ── Buildings ──────────────────────────────────────────────────────────────
+const BUILDINGS = [
+  { id: 'rod',       name: 'Fishing Rod',      icon: '🎣', baseCost: 15,          baseFps: 0.1,      desc: 'A humble rod. Every fisherman starts somewhere.',                         count: 0 },
+  { id: 'net',       name: 'Fishing Net',      icon: '🥅', baseCost: 100,         baseFps: 0.5,      desc: 'Cast wide, catch more. Simple math.',                                     count: 0 },
+  { id: 'boat',      name: 'Rowboat',          icon: '🚣', baseCost: 500,         baseFps: 2,        desc: 'Row, row, row your boat — full of fish.',                                 count: 0 },
+  { id: 'dock',      name: 'Fish Dock',        icon: '🏚️', baseCost: 2000,        baseFps: 8,        desc: 'A proper dock with hired fishers working shifts.',                        count: 0 },
+  { id: 'farm',      name: 'Fish Farm',        icon: '🐠', baseCost: 10000,       baseFps: 25,       desc: 'Sustainably farmed salmon. Mostly sustainably.',                          count: 0 },
+  { id: 'trawler',   name: 'Trawler',          icon: '🛥️', baseCost: 50000,       baseFps: 100,      desc: 'Industrial trawling. The ocean trembles.',                                count: 0 },
+  { id: 'submarine', name: 'Submarine',        icon: '🤿', baseCost: 250000,      baseFps: 400,      desc: 'Hunting the deep. Sonar pings fill the abyss.',                           count: 0 },
+  { id: 'portal',    name: 'Fish Portal',      icon: '🌀', baseCost: 1500000,     baseFps: 1500,     desc: 'A rift to a dimension made entirely of fish.',                            count: 0 },
+  { id: 'deity',     name: 'Ocean Deity',      icon: '🐙', baseCost: 10000000,    baseFps: 6000,     desc: 'An ancient leviathan, now in your employment.',                           count: 0 },
+  { id: 'kraken',    name: 'Kraken',           icon: '🦑', baseCost: 75000000,    baseFps: 28000,    desc: 'It was never a myth. It just needed a manager.',                          count: 0 },
+  { id: 'fishdim',   name: 'Fish Dimension',   icon: '🔭', baseCost: 400000000,   baseFps: 120000,   desc: 'A parallel universe colonised entirely by fish. Rent is surprisingly cheap.', count: 0 },
+  { id: 'timepond',  name: 'Time Pond',        icon: '⏳', baseCost: 2500000000,  baseFps: 500000,   desc: 'Fish from the past, present, and future arrive simultaneously. Scheduling nightmare.', count: 0 },
+  { id: 'fishstar',  name: 'Fish Star',        icon: '⭐', baseCost: 16000000000, baseFps: 2200000,  desc: 'A star made of compressed fish. Warm. Smells indescribable.',             count: 0 },
+];
+
+// ── Upgrades ───────────────────────────────────────────────────────────────
+const UPGRADES = [
+  // ── Click upgrades ──
+  { id: 'u_click1',  name: 'Better Hook',           cost: 50,          desc: '2× click power.',                        bought: false, type: 'click', mult: 2,   req: () => state.allTimeFish >= 10 },
+  { id: 'u_click2',  name: 'Titanium Hook',          cost: 500,         desc: '2× click power.',                        bought: false, type: 'click', mult: 2,   req: () => state.allTimeFish >= 200 },
+  { id: 'u_click3',  name: 'Enchanted Lure',         cost: 5000,        desc: '5× click power.',                        bought: false, type: 'click', mult: 5,   req: () => state.allTimeFish >= 2000 },
+  { id: 'u_click4',  name: 'Quantum Bait',           cost: 100000,      desc: '10× click power.',                       bought: false, type: 'click', mult: 10,  req: () => state.allTimeFish >= 50000 },
+  { id: 'u_click5',  name: "Poseidon's Rod",         cost: 2000000,     desc: '10× click power.',                       bought: false, type: 'click', mult: 10,  req: () => state.allTimeFish >= 500000 },
+  { id: 'u_click6',  name: 'Cosmic Bait',            cost: 50000000,    desc: '20× click power.',                       bought: false, type: 'click', mult: 20,  req: () => state.allTimeFish >= 10000000 },
+  // ── Rod upgrades ──
+  { id: 'u_rod1',    name: 'Carbon Fibre Rod',       cost: 200,         desc: 'Fishing Rods produce 2× more.',          bought: false, type: 'building', target: 'rod',       mult: 2, req: () => getBldg('rod').count >= 5 },
+  { id: 'u_rod2',    name: 'Telescopic Rod',         cost: 2000,        desc: 'Fishing Rods produce 2× more.',          bought: false, type: 'building', target: 'rod',       mult: 2, req: () => getBldg('rod').count >= 15 },
+  { id: 'u_rod3',    name: 'Nano-fibre Rod',         cost: 15000,       desc: 'Fishing Rods produce 2× more.',          bought: false, type: 'building', target: 'rod',       mult: 2, req: () => getBldg('rod').count >= 25 },
+  // ── Net upgrades ──
+  { id: 'u_net1',    name: 'Silk Net',               cost: 1000,        desc: 'Fishing Nets produce 2× more.',          bought: false, type: 'building', target: 'net',       mult: 2, req: () => getBldg('net').count >= 5 },
+  { id: 'u_net2',    name: 'Electrified Net',        cost: 10000,       desc: 'Fishing Nets produce 2× more.',          bought: false, type: 'building', target: 'net',       mult: 2, req: () => getBldg('net').count >= 15 },
+  { id: 'u_net3',    name: 'Quantum Mesh',           cost: 75000,       desc: 'Fishing Nets produce 2× more.',          bought: false, type: 'building', target: 'net',       mult: 2, req: () => getBldg('net').count >= 25 },
+  // ── Boat upgrades ──
+  { id: 'u_boat1',   name: 'Outboard Motor',         cost: 5000,        desc: 'Rowboats produce 2× more.',              bought: false, type: 'building', target: 'boat',      mult: 2, req: () => getBldg('boat').count >= 5 },
+  { id: 'u_boat2',   name: 'Autopilot',              cost: 50000,       desc: 'Rowboats produce 2× more.',              bought: false, type: 'building', target: 'boat',      mult: 2, req: () => getBldg('boat').count >= 15 },
+  { id: 'u_boat3',   name: 'Turbo Propeller',        cost: 300000,      desc: 'Rowboats produce 2× more.',              bought: false, type: 'building', target: 'boat',      mult: 2, req: () => getBldg('boat').count >= 25 },
+  // ── Dock upgrades ──
+  { id: 'u_dock1',   name: 'Union Workers',          cost: 25000,       desc: 'Fish Docks produce 2× more.',            bought: false, type: 'building', target: 'dock',      mult: 2, req: () => getBldg('dock').count >= 5 },
+  { id: 'u_dock2',   name: 'Crane System',           cost: 200000,      desc: 'Fish Docks produce 2× more.',            bought: false, type: 'building', target: 'dock',      mult: 2, req: () => getBldg('dock').count >= 15 },
+  { id: 'u_dock3',   name: 'Automated Conveyor',     cost: 1500000,     desc: 'Fish Docks produce 2× more.',            bought: false, type: 'building', target: 'dock',      mult: 2, req: () => getBldg('dock').count >= 25 },
+  // ── Farm upgrades ──
+  { id: 'u_farm1',   name: 'Premium Feed',           cost: 100000,      desc: 'Fish Farms produce 2× more.',            bought: false, type: 'building', target: 'farm',      mult: 2, req: () => getBldg('farm').count >= 5 },
+  { id: 'u_farm2',   name: 'Genetic Optimisation',   cost: 800000,      desc: 'Fish Farms produce 2× more.',            bought: false, type: 'building', target: 'farm',      mult: 2, req: () => getBldg('farm').count >= 15 },
+  { id: 'u_farm3',   name: 'Hatchery Drones',        cost: 5000000,     desc: 'Fish Farms produce 2× more.',            bought: false, type: 'building', target: 'farm',      mult: 2, req: () => getBldg('farm').count >= 25 },
+  // ── Trawler upgrades ──
+  { id: 'u_trawl1',  name: 'Sonar Array',            cost: 500000,      desc: 'Trawlers produce 2× more.',              bought: false, type: 'building', target: 'trawler',   mult: 2, req: () => getBldg('trawler').count >= 5 },
+  { id: 'u_trawl2',  name: 'Deep-sea Radar',         cost: 3000000,     desc: 'Trawlers produce 2× more.',              bought: false, type: 'building', target: 'trawler',   mult: 2, req: () => getBldg('trawler').count >= 15 },
+  { id: 'u_trawl3',  name: 'Meganet Deployment',     cost: 20000000,    desc: 'Trawlers produce 2× more.',              bought: false, type: 'building', target: 'trawler',   mult: 2, req: () => getBldg('trawler').count >= 25 },
+  // ── Submarine upgrades ──
+  { id: 'u_sub1',    name: 'Torpedo Nets',           cost: 3000000,     desc: 'Submarines produce 2× more.',            bought: false, type: 'building', target: 'submarine', mult: 2, req: () => getBldg('submarine').count >= 5 },
+  { id: 'u_sub2',    name: 'Pressure Harvester',     cost: 20000000,    desc: 'Submarines produce 2× more.',            bought: false, type: 'building', target: 'submarine', mult: 2, req: () => getBldg('submarine').count >= 15 },
+  { id: 'u_sub3',    name: 'Nuclear Fish Drive',     cost: 150000000,   desc: 'Submarines produce 2× more.',            bought: false, type: 'building', target: 'submarine', mult: 2, req: () => getBldg('submarine').count >= 25 },
+  // ── Portal upgrades ──
+  { id: 'u_portal1', name: 'Rift Stabiliser',        cost: 15000000,    desc: 'Fish Portals produce 2× more.',          bought: false, type: 'building', target: 'portal',    mult: 2, req: () => getBldg('portal').count >= 5 },
+  { id: 'u_portal2', name: 'Dimensional Antenna',    cost: 100000000,   desc: 'Fish Portals produce 2× more.',          bought: false, type: 'building', target: 'portal',    mult: 2, req: () => getBldg('portal').count >= 15 },
+  { id: 'u_portal3', name: 'Multiverse Fishing Permit', cost: 750000000, desc: 'Fish Portals produce 2× more.',         bought: false, type: 'building', target: 'portal',    mult: 2, req: () => getBldg('portal').count >= 25 },
+  // ── Deity upgrades ──
+  { id: 'u_deity1',  name: 'Divine Offering',        cost: 100000000,   desc: 'Ocean Deities produce 2× more.',         bought: false, type: 'building', target: 'deity',     mult: 2, req: () => getBldg('deity').count >= 5 },
+  { id: 'u_deity2',  name: 'Eldritch Contract',      cost: 750000000,   desc: 'Ocean Deities produce 2× more.',         bought: false, type: 'building', target: 'deity',     mult: 2, req: () => getBldg('deity').count >= 15 },
+  { id: 'u_deity3',  name: 'Abyssal Pact',           cost: 5000000000,  desc: 'Ocean Deities produce 2× more.',         bought: false, type: 'building', target: 'deity',     mult: 2, req: () => getBldg('deity').count >= 25 },
+  // ── Kraken upgrades ──
+  { id: 'u_krak1',   name: 'Extra Tentacles',        cost: 750000000,   desc: 'Krakens produce 2× more.',               bought: false, type: 'building', target: 'kraken',    mult: 2, req: () => getBldg('kraken').count >= 5 },
+  { id: 'u_krak2',   name: 'HR-Approved Whirlpool',  cost: 5000000000,  desc: 'Krakens produce 2× more.',               bought: false, type: 'building', target: 'kraken',    mult: 2, req: () => getBldg('kraken').count >= 15 },
+  // ── Fish Dimension upgrades ──
+  { id: 'u_fdim1',   name: 'Dimensional Import Tax', cost: 4000000000,  desc: 'Fish Dimensions produce 2× more.',       bought: false, type: 'building', target: 'fishdim',   mult: 2, req: () => getBldg('fishdim').count >= 5 },
+  { id: 'u_fdim2',   name: 'Inter-dimensional Bypass', cost: 25000000000, desc: 'Fish Dimensions produce 2× more.',     bought: false, type: 'building', target: 'fishdim',   mult: 2, req: () => getBldg('fishdim').count >= 15 },
+  // ── Time Pond upgrades ──
+  { id: 'u_time1',   name: 'Paradox Insurance',      cost: 25000000000, desc: 'Time Ponds produce 2× more.',            bought: false, type: 'building', target: 'timepond',  mult: 2, req: () => getBldg('timepond').count >= 5 },
+  { id: 'u_time2',   name: 'Grandfather Clause',     cost: 150000000000, desc: 'Time Ponds produce 2× more.',           bought: false, type: 'building', target: 'timepond',  mult: 2, req: () => getBldg('timepond').count >= 15 },
+  // ── Fish Star upgrades ──
+  { id: 'u_star1',   name: 'Solar Gill Panels',      cost: 160000000000, desc: 'Fish Stars produce 2× more.',           bought: false, type: 'building', target: 'fishstar',  mult: 2, req: () => getBldg('fishstar').count >= 5 },
+  { id: 'u_star2',   name: 'Stellar Compression',    cost: 1000000000000, desc: 'Fish Stars produce 2× more.',          bought: false, type: 'building', target: 'fishstar',  mult: 2, req: () => getBldg('fishstar').count >= 15 },
+  // ── Global multipliers ──
+  { id: 'u_global1', name: 'Marine Biology Degree',  cost: 50000,       desc: 'All production ×1.5.',                   bought: false, type: 'global', mult: 1.5, req: () => state.allTimeFish >= 25000 },
+  { id: 'u_global2', name: 'Ocean Almanac',          cost: 500000,      desc: 'All production ×2.',                     bought: false, type: 'global', mult: 2,   req: () => state.allTimeFish >= 200000 },
+  { id: 'u_global3', name: "Poseidon's Blessing",    cost: 5000000,     desc: 'All production ×3.',                     bought: false, type: 'global', mult: 3,   req: () => state.allTimeFish >= 2000000 },
+  { id: 'u_global4', name: 'Oceanic Singularity',    cost: 75000000,    desc: 'All production ×2.',                     bought: false, type: 'global', mult: 2,   req: () => state.allTimeFish >= 25000000 },
+  { id: 'u_global5', name: 'The Fish Theorem',       cost: 1000000000,  desc: 'All production ×3.',                     bought: false, type: 'global', mult: 3,   req: () => state.allTimeFish >= 200000000 },
+  { id: 'u_global6', name: 'Unified Fish Theory',    cost: 20000000000, desc: 'All production ×5.',                     bought: false, type: 'global', mult: 5,   req: () => state.allTimeFish >= 2000000000 },
+];
+
+const NEWS_LINES = [
+  'Welcome to FishClicker! Click the fish to start your fishing empire.',
+  'Local fisherman catches record-breaking 10,000 fish. Wife still unimpressed.',
+  'Scientists discover fish that clicks back. Awarded Nobel Prize in Confusion.',
+  'Ocean declares war on idle games. Casualties include one browser tab.',
+  'FishClicker player ascends to godhood, still wants more fish.',
+  'Economists baffled as fish supply exceeds global demand by factor of eight million.',
+  '"I can quit anytime," says man surrounded by 50 trawlers and a kraken on retainer.',
+  'Fish portal opens downtown. Seagulls declared a national emergency.',
+  'Ocean Deity files for overtime pay. HR meeting scheduled for Thursday.',
+  'Breaking: fish now outnumber stars in the observable universe. Astronomers switching careers.',
+  'Area man clicks fish 14,000 times. Doctors confirm his index finger "technically counts as a weapon."',
+  'Kraken spotted wearing a hard hat. Sources say it is middle management now.',
+  'Fish Farm achieves sentience. Issues press release demanding dental coverage.',
+  'Time Pond causes grandfather to arrive late to his own birth. Paradox insurance claim pending.',
+  'Local trawler captain insists he is "definitely not addicted." Has 847 trawlers.',
+  'Fish Dimension rent prices soar. Landlord cited as "just a slightly bigger fish."',
+  'Fish Star reaches surface temperature of 6,000°C. Local fishermen call it "a bit nippy."',
+  'Government proposes fish-based currency. Central bank says it smells like a good idea.',
+  'Marine biologist resigns after discovering fish are running the economy.',
+  'Submarine crew reports fish on the outside waving back. Mission classified.',
+  'Quantum Bait observed existing in two hooks simultaneously. Physics weeps.',
+  'Ocean Deity requests performance review. Reviewer has not been seen since.',
+  '"The fish hired me," admits CEO of major shipping company.',
+  'Fish portal upgrade delayed. Contractor says the rift was "not up to code."',
+  'Man buys 100th fishing rod. Neighbours describe him as "reel obsessed."',
+  'Fish Almanac updated. New entry: "you." Description: concerning.',
+  'Kraken HR memo leaked: "Tentacle hygiene is non-negotiable in client meetings."',
+  'Scientists confirm fish have been collectively pretending not to understand economics.',
+  'Time Pond glitch sends 40 fish to the Jurassic era. They adapt immediately.',
+  'Breaking: the ocean calls. It wants its fish back. You decline.',
+];
+
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+function getBldg(id) { return BUILDINGS.find(b => b.id === id); }
+
+function buildingCost(b) {
+  return Math.ceil(b.baseCost * Math.pow(1.15, b.count));
+}
+
+// Total cost to buy `n` buildings starting from b.count
+function bulkCost(b, n) {
+  if (n <= 0) return 0;
+  // sum of geometric series: baseCost * 1.15^count * (1.15^n - 1) / 0.15
+  return Math.ceil(b.baseCost * Math.pow(1.15, b.count) * (Math.pow(1.15, n) - 1) / 0.15);
+}
+
+// How many of b the player can afford right now
+function maxAffordable(b) {
+  if (state.fish < buildingCost(b)) return 0;
+  // n = floor(log(fish * 0.15 / (baseCost * 1.15^count) + 1) / log(1.15))
+  const n = Math.floor(Math.log(state.fish * 0.15 / (b.baseCost * Math.pow(1.15, b.count)) + 1) / Math.log(1.15));
+  return Math.max(0, n);
+}
+
+// Resolve current buy quantity for building b (returns a number)
+function resolvedQty(b) {
+  if (state.buyQty === 'max') return maxAffordable(b);
+  return state.buyQty;
+}
+
+function fmt(n) {
+  if (n < 1000) return n.toFixed(n < 10 ? 1 : 0);
+  if (n < 1e6)  return (n / 1e3).toFixed(2) + 'K';
+  if (n < 1e9)  return (n / 1e6).toFixed(2) + 'M';
+  if (n < 1e12) return (n / 1e9).toFixed(2) + 'B';
+  return (n / 1e12).toFixed(2) + 'T';
+}
+
+// ── Click rate tracking ────────────────────────────────────────────────────
+const clickTimestamps = [];
+const CLICK_KEEP   = 5;    // buffer size — rate based on last N clicks
+const CLICK_EXPIRE = 1000; // ms; clear rate if no click within this time
+
+function recordClick() {
+  clickTimestamps.push(Date.now());
+  if (clickTimestamps.length > CLICK_KEEP) clickTimestamps.shift();
+}
+
+function clickFps() {
+  if (!clickTimestamps.length) return 0;
+  const now = Date.now();
+  // clear buffer after idle timeout so counter reaches 0
+  if (now - clickTimestamps[clickTimestamps.length - 1] > CLICK_EXPIRE) {
+    clickTimestamps.length = 0;
+    return 0;
+  }
+  // measure from oldest buffered click to NOW, so rate decays naturally as time passes
+  const elapsed = (now - clickTimestamps[0]) / 1000;
+  if (elapsed <= 0) return 0;
+  return (clickTimestamps.length / elapsed) * state.clickPower;
+}
+
+// ── FPS calculation ────────────────────────────────────────────────────────
+function calcFps() {
+  // per-building multipliers
+  const bMult = {};
+  BUILDINGS.forEach(b => bMult[b.id] = 1);
+  let globalMult = 1;
+
+  UPGRADES.filter(u => u.bought).forEach(u => {
+    if (u.type === 'building') bMult[u.target] *= u.mult;
+    if (u.type === 'global')   globalMult        *= u.mult;
+  });
+
+  let total = 0;
+  BUILDINGS.forEach(b => {
+    total += b.count * b.baseFps * bMult[b.id] * globalMult;
+  });
+  state.fishPerSec = total;
+}
+
+function effectiveFps(b) {
+  let mult = 1;
+  UPGRADES.filter(u => u.bought).forEach(u => {
+    if (u.type === 'building' && u.target === b.id) mult *= u.mult;
+    if (u.type === 'global') mult *= u.mult;
+  });
+  return b.baseFps * mult;
+}
+
+function calcClickPower() {
+  let cp = 1;
+  UPGRADES.filter(u => u.bought && u.type === 'click').forEach(u => cp *= u.mult);
+  state.clickPower = Math.floor(cp);
+}
+
+// ── Render ─────────────────────────────────────────────────────────────────
+function renderStats() {
+  document.getElementById('fish-count').textContent = fmt(state.fish) + ' fish';
+  const total = state.fishPerSec + clickFps();
+  document.getElementById('fish-per-sec').textContent = fmt(total) + ' fish / sec';
+  document.getElementById('stat-total').textContent = fmt(state.fish);
+  document.getElementById('stat-alltime').textContent = 'all time: ' + fmt(state.allTimeFish);
+  document.getElementById('click-val').textContent = fmt(state.clickPower);
+}
+
+function renderBuildings() {
+  const list = document.getElementById('buildings-list');
+  list.innerHTML = '';
+  BUILDINGS.forEach(b => {
+    const qty = resolvedQty(b);
+    const cost = qty > 0 ? bulkCost(b, qty) : buildingCost(b);
+    const canAfford = qty > 0 && state.fish >= cost;
+    const row = document.createElement('div');
+    row.className = 'building-row' + (canAfford ? '' : ' locked');
+    row.dataset.id = b.id;
+    const label = qty > 1 ? `×${qty} ` : '';
+    const buyQtyHtml = qty > 1 ? `<span class="b-buy-qty">+${qty}</span>` : '';
+    row.innerHTML = `
+      <div class="b-icon">${b.icon}</div>
+      <div class="b-info">
+        <div class="b-name">${b.name}</div>
+        <div class="b-desc">${b.desc}</div>
+        <div class="b-cost">🐟 ${label}${fmt(cost)} &nbsp;|&nbsp; +${fmt(effectiveFps(b))}/s each</div>
+      </div>
+      <div class="b-count-wrap">${buyQtyHtml}<span class="b-count">${b.count}</span></div>`;
+    list.appendChild(row);
+  });
+}
+
+// Lightweight update used in the game loop — no DOM rebuild
+function updateBuildingAffordability() {
+  document.querySelectorAll('.building-row').forEach(row => {
+    const b = BUILDINGS.find(b => b.id === row.dataset.id);
+    if (!b) return;
+    const qty = resolvedQty(b);
+    const cost = qty > 0 ? bulkCost(b, qty) : buildingCost(b);
+    const canAfford = qty > 0 && state.fish >= cost;
+    row.classList.toggle('locked', !canAfford);
+    const costEl = row.querySelector('.b-cost');
+    if (costEl) {
+      const label = qty > 1 ? `×${qty} ` : '';
+      costEl.innerHTML = `🐟 ${label}${fmt(cost)} &nbsp;|&nbsp; +${fmt(effectiveFps(b))}/s each`;
+    }
+    const wrap = row.querySelector('.b-count-wrap');
+    if (wrap) {
+      const buyQtyEl = wrap.querySelector('.b-buy-qty');
+      if (qty > 1) {
+        if (buyQtyEl) buyQtyEl.textContent = `+${qty}`;
+        else wrap.insertAdjacentHTML('afterbegin', `<span class="b-buy-qty">+${qty}</span>`);
+      } else if (buyQtyEl) {
+        buyQtyEl.remove();
+      }
+    }
+  });
+}
+
+let lastUpgradeSnapshot = '';
+
+function upgradeSnapshot() {
+  return UPGRADES.map(u => `${u.id}:${u.req() ? 1 : 0}:${u.bought ? 1 : 0}:${state.fish >= u.cost ? 1 : 0}`).join('|');
+}
+
+function renderUpgrades() {
+  const list = document.getElementById('upgrades-list');
+  list.innerHTML = '';
+  UPGRADES.forEach(u => {
+    if (!u.req()) return;
+    const btn = document.createElement('button');
+    btn.className = 'upgrade-btn' + (u.bought ? ' bought' : '');
+    btn.disabled = u.bought || state.fish < u.cost;
+    btn.dataset.id = u.id;
+    btn.innerHTML = `
+      <span class="u-name">${u.name}${u.bought ? ' ✓' : ''}</span>
+      <span class="u-desc">${u.desc}</span>
+      ${u.bought ? '' : `<span class="u-cost">🐟 ${fmt(u.cost)}</span>`}`;
+    list.appendChild(btn);
+  });
+  // listener is set up once at init via initListeners()
+}
+
+function maybeRenderUpgrades() {
+  const snap = upgradeSnapshot();
+  if (snap !== lastUpgradeSnapshot) {
+    lastUpgradeSnapshot = snap;
+    renderUpgrades();
+  }
+}
+
+// ── Buy logic ──────────────────────────────────────────────────────────────
+function buyBuilding(b) {
+  const qty = resolvedQty(b);
+  if (qty <= 0) return;
+  const cost = bulkCost(b, qty);
+  if (state.fish < cost) return;
+  state.fish -= cost;
+  b.count += qty;
+  calcFps();
+  renderBuildings(); // full rebuild: count changed
+  renderUpgrades();  // full rebuild: new upgrades may unlock
+  lastUpgradeSnapshot = upgradeSnapshot();
+  renderStats();
+}
+
+function buyUpgrade(u) {
+  if (u.bought || state.fish < u.cost) return;
+  state.fish -= u.cost;
+  u.bought = true;
+  if (u.type === 'click') calcClickPower();
+  calcFps();
+  renderUpgrades();
+  lastUpgradeSnapshot = upgradeSnapshot();
+  renderStats();
+}
+
+// ── Click handler ──────────────────────────────────────────────────────────
+const fishBtn = document.getElementById('fish-btn');
+fishBtn.addEventListener('click', (e) => {
+  state.fish += state.clickPower;
+  state.allTimeFish += state.clickPower;
+  recordClick();
+
+  // floating label
+  const panel = document.getElementById('clicker-panel');
+  const rect  = fishBtn.getBoundingClientRect();
+  const pRect = panel.getBoundingClientRect();
+  const floater = document.createElement('div');
+  floater.className = 'floater';
+  floater.textContent = '+' + fmt(state.clickPower);
+  floater.style.left = (rect.left - pRect.left + Math.random() * 80 - 20) + 'px';
+  floater.style.top  = (rect.top  - pRect.top  + Math.random() * 40)      + 'px';
+  panel.appendChild(floater);
+  setTimeout(() => floater.remove(), 1000);
+
+  checkMilestones();
+  renderStats();
+});
+
+// ── Milestones ─────────────────────────────────────────────────────────────
+const MILESTONES = [
+  { at: 10,       msg: '🐟 First catch! The journey begins.' },
+  { at: 100,      msg: '🎣 100 fish! You smell like the sea now.' },
+  { at: 1000,     msg: '🚣 1,000 fish! Your arms are getting strong.' },
+  { at: 10000,    msg: '🛥️ 10,000 fish! Local fishers fear your name.' },
+  { at: 100000,   msg: '🌊 100K fish! The ocean is yours.' },
+  { at: 1000000,  msg: '🌀 1 MILLION fish! Portal unlocked!' },
+  { at: 10000000, msg: '🐙 10M fish! Ancient entities take notice.' },
+  { at: 1e9,      msg: '💫 1 BILLION fish! You transcend fishing.' },
+];
+const shownMilestones = new Set();
+
+function checkMilestones() {
+  MILESTONES.forEach(m => {
+    if (!shownMilestones.has(m.at) && state.allTimeFish >= m.at) {
+      shownMilestones.add(m.at);
+      showMilestone(m.msg);
+    }
+  });
+}
+
+function showMilestone(msg) {
+  const el = document.getElementById('milestone-ticker');
+  el.textContent = msg;
+  setTimeout(() => { if (el.textContent === msg) el.textContent = ''; }, 5000);
+}
+
+// ── News ticker ────────────────────────────────────────────────────────────
+(function initNews() {
+  const el  = document.getElementById('news-text');
+  const bar = document.getElementById('news');
+  let idx   = 0;
+
+  function showNext() {
+    el.textContent = NEWS_LINES[idx % NEWS_LINES.length];
+    idx++;
+
+    // Force a reflow so the browser measures the new text width before animating
+    el.style.transition = 'none';
+    el.style.transform  = `translateX(${bar.clientWidth}px)`;
+    void el.offsetWidth; // reflow
+
+    // Travel = screenWidth + textWidth (so it fully exits left before resetting)
+    const travel = bar.clientWidth + el.offsetWidth;
+    const speed  = 120; // px per second
+    const dur    = travel / speed;
+
+    el.style.transition = `transform ${dur}s linear`;
+    el.style.transform  = `translateX(-${el.offsetWidth}px)`;
+
+    // When it finishes scrolling off, show the next line
+    el.addEventListener('transitionend', showNext, { once: true });
+  }
+
+  showNext();
+})();
+
+// ── Game loop ──────────────────────────────────────────────────────────────
+let lastTime = null;
+let renderAccum = 0;
+
+function gameLoop(timestamp) {
+  if (!lastTime) lastTime = timestamp;
+  const dt = (timestamp - lastTime) / 1000;
+  lastTime = timestamp;
+
+  const gained = state.fishPerSec * dt;
+  state.fish += gained;
+  state.allTimeFish += gained;
+
+  renderAccum += dt;
+  if (renderAccum >= 0.1) {
+    renderAccum = 0;
+    renderStats();
+    updateBuildingAffordability(); // lightweight: just toggles .locked class
+    maybeRenderUpgrades();         // only rebuilds if visible/affordable set changed
+    checkMilestones();
+  }
+
+  requestAnimationFrame(gameLoop);
+}
+
+// ── Save / Load ────────────────────────────────────────────────────────────
+function saveGame() {
+  const data = {
+    fish: state.fish,
+    allTimeFish: state.allTimeFish,
+    buildings: BUILDINGS.map(b => ({ id: b.id, count: b.count })),
+    upgrades: UPGRADES.filter(u => u.bought).map(u => u.id),
+  };
+  localStorage.setItem('fishclicker_save', JSON.stringify(data));
+}
+
+function loadGame() {
+  try {
+    const raw = localStorage.getItem('fishclicker_save');
+    if (!raw) return;
+    const data = JSON.parse(raw);
+    state.fish = data.fish || 0;
+    state.allTimeFish = data.allTimeFish || 0;
+    data.buildings.forEach(s => {
+      const b = getBldg(s.id);
+      if (b) b.count = s.count;
+    });
+    data.upgrades.forEach(uid => {
+      const u = UPGRADES.find(u => u.id === uid);
+      if (u) u.bought = true;
+    });
+    calcFps();
+    calcClickPower();
+  } catch (e) { /* ignore corrupt save */ }
+}
+
+// ── Init ───────────────────────────────────────────────────────────────────
+function initListeners() {
+  // Buildings — one permanent delegated listener
+  document.getElementById('buildings-list').addEventListener('click', e => {
+    const row = e.target.closest('.building-row');
+    if (!row || row.classList.contains('locked')) return;
+    const b = BUILDINGS.find(b => b.id === row.dataset.id);
+    if (b) buyBuilding(b);
+  });
+
+  // Upgrades — one permanent delegated listener
+  document.getElementById('upgrades-list').addEventListener('click', e => {
+    const btn = e.target.closest('.upgrade-btn');
+    if (!btn || btn.disabled) return;
+    const u = UPGRADES.find(u => u.id === btn.dataset.id);
+    if (u) buyUpgrade(u);
+  });
+
+  // Quantity bar
+  document.getElementById('qty-bar').addEventListener('click', e => {
+    const btn = e.target.closest('.qty-btn');
+    if (!btn) return;
+    const raw = btn.dataset.qty;
+    state.buyQty = raw === 'max' ? 'max' : parseInt(raw, 10);
+    document.querySelectorAll('.qty-btn').forEach(b => b.classList.toggle('active', b === btn));
+    renderBuildings(); // rebuild to show updated costs
+  });
+}
+
+loadGame();
+renderStats();
+renderBuildings();
+renderUpgrades();
+lastUpgradeSnapshot = upgradeSnapshot();
+initListeners();
+requestAnimationFrame(gameLoop);
+setInterval(saveGame, 10000); // auto-save every 10s
+</script>
+</body>
+</html>
