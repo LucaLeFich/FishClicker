@@ -38,7 +38,11 @@
       <h2>🎰 Gambling Den</h2>
       <button id="gamble-close">✕</button>
     </div>
-    <div id="blackjack">
+    <div id="gamble-tabs">
+      <button class="gamble-tab active" data-tab="blackjack">🃏 Blackjack</button>
+      <button class="gamble-tab" data-tab="roulette">🎡 Roulette</button>
+    </div>
+    <div id="blackjack" class="gamble-game">
       <div id="bj-dealer-area">
         <div class="bj-label">Dealer <span id="bj-dealer-score"></span></div>
         <div id="bj-dealer-cards" class="bj-cards"></div>
@@ -63,6 +67,40 @@
         <button id="bj-hit" disabled>Hit</button>
         <button id="bj-stand" disabled>Stand</button>
         <button id="bj-double" disabled>Double Down</button>
+      </div>
+    </div>
+    <div id="roulette" class="gamble-game hidden">
+      <div id="rl-wheel-wrap">
+        <div id="rl-pointer">▼</div>
+        <div id="rl-wheel">
+          <canvas id="rl-canvas" width="220" height="220"></canvas>
+          <div id="rl-inner"><span id="rl-result-num">?</span></div>
+        </div>
+      </div>
+      <div id="rl-message"></div>
+      <div id="rl-bet-row">
+        <span class="bj-bet-label">Bet:</span>
+        <button class="rl-amount-btn" data-bet="10">10</button>
+        <button class="rl-amount-btn" data-bet="100">100</button>
+        <button class="rl-amount-btn" data-bet="1000">1K</button>
+        <button class="rl-amount-btn" data-bet="10000">10K</button>
+        <button class="rl-amount-btn" data-bet="100000">100K</button>
+        <button class="rl-amount-btn" data-bet="allin">All In 🐟</button>
+        <span id="rl-current-bet">No bet placed</span>
+      </div>
+      <div id="rl-type-area">
+        <button class="rl-type-btn active" data-type="red">🔴 Red</button>
+        <button class="rl-type-btn" data-type="black">⚫ Black</button>
+        <button class="rl-type-btn" data-type="odd">Odd</button>
+        <button class="rl-type-btn" data-type="even">Even</button>
+        <button class="rl-type-btn" data-type="low">1–18</button>
+        <button class="rl-type-btn" data-type="high">19–36</button>
+        <button class="rl-type-btn" data-type="dozen1">1st 12</button>
+        <button class="rl-type-btn" data-type="dozen2">2nd 12</button>
+        <button class="rl-type-btn" data-type="dozen3">3rd 12</button>
+      </div>
+      <div id="rl-controls">
+        <button id="rl-spin">🎡 Spin</button>
       </div>
     </div>
   </div>

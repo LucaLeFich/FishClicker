@@ -192,6 +192,9 @@ const ACHIEVEMENTS = [
   { id: 'a_g4',  name: 'Busted',               icon: '💥', secret: true,  unlocked: false, desc: 'Bust for the first time. It happens to everyone. Once.',      check: () => false }, // triggered
   { id: 'a_g5',  name: 'On a Roll',            icon: '🔥', secret: false, unlocked: false, desc: 'Win 5 Blackjack hands in a row.',                             check: () => false }, // triggered
   { id: 'a_g6',  name: 'Fish Casino',          icon: '🏛️', secret: true,  unlocked: false, desc: 'Win more than 1,000,000 fish in a single Blackjack payout.',  check: () => false }, // triggered in bjFinish
+  // Roulette
+  { id: 'a_r1',  name: 'Lucky Zero',           icon: '🟢', secret: true,  unlocked: false, desc: 'Land on 0 in roulette. The house weeps alongside you.',        check: () => false }, // triggered
+  { id: 'a_r2',  name: 'Rouge et Noir',        icon: '🎡', secret: false, unlocked: false, desc: 'Win 5 roulette spins in a row.',                               check: () => false }, // triggered
 ];
 
 function getAchievement(id) { return ACHIEVEMENTS.find(a => a.id === id); }
@@ -619,6 +622,7 @@ const BJ = {
   playerHand: [],
   dealerHand: [],
   bet: 0,
+  originalBet: 0,
   state: 'idle',       // idle | playing | done
   consecutiveWins: 0,
   allInBet: false,
@@ -699,6 +703,7 @@ function bjDeal() {
   if (BJ.bet <= 0)          { bjMsg('Set a bet first!', 'warn'); return; }
   if (state.fish < BJ.bet)  { bjMsg('Not enough fish!', 'warn'); return; }
   triggerAchievement('a_g1');
+  BJ.originalBet = BJ.bet;
   state.fish -= BJ.bet;
   renderStats();
   if (BJ.deck.length < 15) bjBuildDeck();
@@ -784,6 +789,9 @@ function bjFinish(result) {
   }
   if (result === 'bust') triggerAchievement('a_g4');
   BJ.allInBet = false;
+  // Restore bet to pre-double amount
+  BJ.bet = BJ.originalBet;
+  document.getElementById('bj-current-bet').textContent = `Bet: ${fmt(BJ.bet)} 🐟`;
   checkAchievements();
 }
 
@@ -804,6 +812,149 @@ function bjSetBet(raw) {
 }
 
 bjBuildDeck();
+
+// ── Roulette ───────────────────────────────────────────────────────────────
+const RL_RED   = new Set([1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36]);
+const RL_ORDER = [0,32,15,19,4,21,2,25,17,34,6,27,13,36,11,30,8,23,10,5,24,16,33,1,20,14,31,9,22,18,29,7,28,12,35,3,26];
+
+const RL_INIT_ROT = -(360 / 37) / 2;   // aligns pointer to center of segment 0 (green)
+const RL = { bet: 0, betType: 'red', spinning: false, consecutiveWins: 0, currentRotation: RL_INIT_ROT };
+
+function rlNumberColor(n) {
+  if (n === 0) return 'green';
+  return RL_RED.has(n) ? 'red' : 'black';
+}
+
+function rlInit() {
+  const canvas = document.getElementById('rl-canvas');
+  const ctx    = canvas.getContext('2d');
+  const size   = canvas.width;          // 170
+  const cx = size / 2, cy = size / 2;
+  const outerR = size / 2;
+  const numR   = outerR * 0.76;         // radius where numbers sit
+  const seg    = (Math.PI * 2) / 37;
+
+  RL_ORDER.forEach((n, i) => {
+    const startAngle = i * seg - Math.PI / 2;   // start from 12 o'clock
+    const endAngle   = startAngle + seg;
+    const color = rlNumberColor(n);
+    const fill  = color === 'green' ? '#1a7a1a' : color === 'red' ? '#9a1010' : '#151515';
+
+    // Segment
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, outerR, startAngle, endAngle);
+    ctx.closePath();
+    ctx.fillStyle = fill;
+    ctx.fill();
+    ctx.strokeStyle = '#3a0a5a';
+    ctx.lineWidth = 0.8;
+    ctx.stroke();
+
+    // Number label
+    const midAngle = startAngle + seg / 2;
+    const tx = cx + Math.cos(midAngle) * numR;
+    const ty = cy + Math.sin(midAngle) * numR;
+    ctx.save();
+    ctx.translate(tx, ty);
+    ctx.rotate(midAngle + Math.PI / 2);
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 9px Arial, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(n.toString(), 0, 0);
+    ctx.restore();
+  });
+
+  canvas.style.transform = `rotate(${RL.currentRotation}deg)`;
+}
+
+function rlMsg(text, type) {
+  const el = document.getElementById('rl-message');
+  el.textContent = text;
+  el.className = type ? `bj-msg-${type}` : '';
+}
+
+function rlSetBet(raw) {
+  const amount = raw === 'allin' ? Math.floor(state.fish) : parseInt(raw);
+  if (amount <= 0) { rlMsg('You have no fish to bet!', 'warn'); return; }
+  RL.bet = amount;
+  document.getElementById('rl-current-bet').textContent = `Bet: ${fmt(RL.bet)} 🐟`;
+  document.querySelectorAll('.rl-amount-btn').forEach(b => b.classList.toggle('active', b.dataset.bet === raw));
+}
+
+function rlCalcPayout(result, betType, bet) {
+  const color = rlNumberColor(result);
+  const isOdd = result > 0 && result % 2 !== 0;
+  let mult = 0;
+  switch (betType) {
+    case 'red':    if (color === 'red')                        mult = 2; break;
+    case 'black':  if (color === 'black')                     mult = 2; break;
+    case 'odd':    if (isOdd)                                 mult = 2; break;
+    case 'even':   if (result > 0 && !isOdd)                 mult = 2; break;
+    case 'low':    if (result >= 1  && result <= 18)          mult = 2; break;
+    case 'high':   if (result >= 19 && result <= 36)          mult = 2; break;
+    case 'dozen1': if (result >= 1  && result <= 12)          mult = 3; break;
+    case 'dozen2': if (result >= 13 && result <= 24)          mult = 3; break;
+    case 'dozen3': if (result >= 25 && result <= 36)          mult = 3; break;
+  }
+  return mult > 0 ? bet * mult : 0;
+}
+
+async function rlSpin() {
+  if (RL.spinning) return;
+  if (RL.bet <= 0)         { rlMsg('Set a bet first!', 'warn'); return; }
+  if (state.fish < RL.bet) { rlMsg('Not enough fish!', 'warn'); return; }
+
+  RL.spinning = true;
+  document.getElementById('rl-spin').disabled = true;
+  state.fish -= RL.bet;
+  renderStats();
+
+  const result    = Math.floor(Math.random() * 37);
+  const resultEl  = document.getElementById('rl-result-num');
+  const wheelEl   = document.getElementById('rl-canvas');
+
+  resultEl.textContent = '?';
+  resultEl.style.color = '#fff';
+
+  const seg           = 360 / 37;
+  const idx           = RL_ORDER.indexOf(result);
+  const segCenter     = idx * seg + seg / 2;
+  const targetAngle   = 360 - segCenter;   // angle that puts this segment at the pointer
+  const normalized    = ((RL.currentRotation % 360) + 360) % 360;
+  let   delta         = targetAngle - normalized;
+  if (delta < 0) delta += 360;
+  const totalRot      = RL.currentRotation + 5 * 360 + delta;
+
+  wheelEl.style.transition = 'transform 4s cubic-bezier(0.17,0.67,0.12,0.99)';
+  wheelEl.style.transform  = `rotate(${totalRot}deg)`;
+
+  await new Promise(r => setTimeout(r, 4200));
+
+  const color = rlNumberColor(result);
+  resultEl.textContent = result;
+  resultEl.style.color = color === 'red' ? '#ff7070' : color === 'green' ? '#60ff90' : '#c0c0c0';
+
+  const payout = rlCalcPayout(result, RL.betType, RL.bet);
+  if (payout > 0) {
+    state.fish += payout;
+    RL.consecutiveWins++;
+    rlMsg(`${result} — ${color.toUpperCase()}! You win ${fmt(payout)} 🐟`, 'win');
+    if (RL.consecutiveWins >= 5) triggerAchievement('a_r2');
+  } else {
+    RL.consecutiveWins = 0;
+    rlMsg(`${result} — ${color.toUpperCase()}. You lose ${fmt(RL.bet)} 🐟.`, 'lose');
+  }
+  if (result === 0) triggerAchievement('a_r1');
+
+  RL.currentRotation = totalRot;
+  renderStats();
+  checkAchievements();
+
+  RL.spinning = false;
+  document.getElementById('rl-spin').disabled = false;
+}
 
 // ── Game loop ──────────────────────────────────────────────────────────────
 let lastTime = null;
@@ -978,6 +1129,14 @@ function initListeners() {
       document.getElementById('gamble-overlay').classList.add('hidden');
   });
 
+  // Gamble tabs
+  document.getElementById('gamble-tabs').addEventListener('click', e => {
+    const tab = e.target.closest('.gamble-tab');
+    if (!tab) return;
+    document.querySelectorAll('.gamble-tab').forEach(t => t.classList.toggle('active', t === tab));
+    document.querySelectorAll('.gamble-game').forEach(g => g.classList.toggle('hidden', g.id !== tab.dataset.tab));
+  });
+
   // Blackjack bet buttons
   document.getElementById('gamble-panel').addEventListener('click', e => {
     const bb = e.target.closest('.bj-bet-btn');
@@ -1040,6 +1199,18 @@ function initListeners() {
     location.reload();
   });
 
+  // Roulette
+  document.getElementById('roulette').addEventListener('click', e => {
+    const ab = e.target.closest('.rl-amount-btn');
+    if (ab) { rlSetBet(ab.dataset.bet); return; }
+    const tb = e.target.closest('.rl-type-btn');
+    if (tb) {
+      RL.betType = tb.dataset.type;
+      document.querySelectorAll('.rl-type-btn').forEach(b => b.classList.toggle('active', b === tb));
+    }
+  });
+  document.getElementById('rl-spin').addEventListener('click', rlSpin);
+
   // Quantity bar
   document.getElementById('qty-bar').addEventListener('click', e => {
     const btn = e.target.closest('.qty-btn');
@@ -1052,6 +1223,7 @@ function initListeners() {
 }
 
 loadGame();
+rlInit();
 renderStats();
 renderBuildings();
 renderUpgrades();
