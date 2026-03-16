@@ -888,6 +888,7 @@ function rlCalcPayout(result, betType, bet) {
   const isOdd = result > 0 && result % 2 !== 0;
   let mult = 0;
   switch (betType) {
+    case 'zero':   if (result === 0)                           mult = 36; break;
     case 'red':    if (color === 'red')                        mult = 2; break;
     case 'black':  if (color === 'black')                     mult = 2; break;
     case 'odd':    if (isOdd)                                 mult = 2; break;
