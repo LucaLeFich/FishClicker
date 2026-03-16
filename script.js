@@ -875,6 +875,20 @@ function rlMsg(text, type) {
   el.className = type ? `bj-msg-${type}` : '';
 }
 
+function updateBetButtons() {
+  const fish = state.fish;
+  const PCTS = [0.001, 0.01, 0.05, 0.10, 0.25];
+  const MINS = [10, 100, 1000, 10000, 100000];
+  const niceRound = n => { if (n < 10) return n; const m = Math.pow(10, Math.floor(Math.log10(n)) - 1); return Math.round(n / m) * m; };
+  const amounts = PCTS.map((p, i) => niceRound(Math.max(MINS[i], Math.floor(fish * p))));
+
+  [...document.querySelectorAll('.bj-bet-btn')].filter(b => b.dataset.bet !== 'allin')
+    .forEach((btn, i) => { btn.dataset.bet = amounts[i]; btn.textContent = fmt(amounts[i]); });
+
+  [...document.querySelectorAll('.rl-amount-btn')].filter(b => b.dataset.bet !== 'allin')
+    .forEach((btn, i) => { btn.dataset.bet = amounts[i]; btn.textContent = fmt(amounts[i]); });
+}
+
 function rlSetBet(raw) {
   const amount = raw === 'allin' ? Math.floor(state.fish) : parseInt(raw);
   if (amount <= 0) { rlMsg('You have no fish to bet!', 'warn'); return; }
@@ -1120,6 +1134,7 @@ function initListeners() {
 
   // Gambling Den open/close
   document.getElementById('gamble-btn').addEventListener('click', () => {
+    updateBetButtons();
     document.getElementById('gamble-overlay').classList.toggle('hidden');
   });
   document.getElementById('gamble-close').addEventListener('click', () => {
