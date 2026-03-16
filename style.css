@@ -27,7 +27,7 @@ body {
 #header h1 { font-size: 1.6rem; color: #5dd8ff; text-shadow: 0 0 12px #3ab0e0; }
 #fish-count { font-size: 1.1rem; color: #a0deff; }
 #fish-per-sec { font-size: 0.85rem; color: #6ab8e0; }
-#ach-btn {
+#ach-btn, #save-btn {
   background: rgba(10,50,90,0.8);
   border: 1px solid #2a6a9a;
   border-radius: 6px;
@@ -37,7 +37,86 @@ body {
   cursor: pointer;
   transition: background 0.2s, border-color 0.2s;
 }
-#ach-btn:hover { background: rgba(20,80,130,0.9); border-color: #5dd8ff; }
+#ach-btn:hover, #save-btn:hover { background: rgba(20,80,130,0.9); border-color: #5dd8ff; }
+
+/* ── Save panel ── */
+#save-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+}
+#save-overlay.hidden { display: none; }
+#save-panel {
+  background: #0d2b4e;
+  border: 1px solid #2a6a9a;
+  border-radius: 12px;
+  width: min(520px, 92vw);
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+#save-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid #1a5a8a;
+}
+#save-header h2 { font-size: 1.1rem; color: #5dd8ff; }
+#save-close {
+  background: transparent;
+  border: none;
+  color: #7ac8e8;
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+#save-close:hover { background: rgba(255,255,255,0.1); }
+#save-body {
+  padding: 16px 18px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.save-section { display: flex; flex-direction: column; gap: 8px; }
+.save-section-label { font-size: 0.8rem; color: #7ac8e8; }
+#save-export-text, #save-import-text {
+  background: rgba(0,0,0,0.4);
+  border: 1px solid #2a6a9a;
+  border-radius: 6px;
+  color: #cce8ff;
+  font-family: monospace;
+  font-size: 0.72rem;
+  padding: 8px;
+  resize: vertical;
+  height: 72px;
+  word-break: break-all;
+}
+#save-export-text:focus, #save-import-text:focus { outline: none; border-color: #5dd8ff; }
+.save-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+.save-btns button {
+  background: rgba(10,50,90,0.8);
+  border: 1px solid #2a6a9a;
+  border-radius: 6px;
+  color: #cce8ff;
+  font-size: 0.82rem;
+  padding: 6px 14px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.save-btns button:hover { background: rgba(20,80,130,0.9); border-color: #5dd8ff; }
+#save-wipe-btn { border-color: #8a2a2a !important; color: #ff8888 !important; }
+#save-wipe-btn:hover { background: rgba(120,20,20,0.5) !important; border-color: #ff4444 !important; }
+#save-msg { font-size: 0.82rem; min-height: 1.2em; }
+.save-msg-ok  { color: #5dd8ff; }
+.save-msg-err { color: #ff8888; }
 
 /* ── Main layout ── */
 #main {
