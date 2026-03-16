@@ -10,9 +10,35 @@
 
 <div id="header">
   <h1>🐟 FishClicker</h1>
+  <div id="header-center">
+    <button id="ach-btn" title="Achievements">🏆 Achievements</button>
+  </div>
   <div>
     <div id="fish-count">0 fish</div>
     <div id="fish-per-sec">0 fish / sec</div>
+  </div>
+</div>
+
+<div id="ach-overlay" class="hidden">
+  <div id="ach-panel">
+    <div id="ach-header">
+      <h2>🏆 Achievements</h2>
+      <span id="ach-count">0 / 0</span>
+      <button id="ach-close">✕</button>
+    </div>
+    <div id="ach-grid"></div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<div id="rocky-overlay" class="hidden">
+  <div id="rocky-popup">
+    <div id="rocky-popup-fish"><span class="rocky-icon">🐟</span></div>
+    <div id="rocky-popup-title">✨ LEGENDARY CATCH ✨</div>
+    <div id="rocky-popup-name">Rocky</div>
+    <div id="rocky-popup-desc">A mysterious white fish emerges from the depths.<br>It will generate <strong>10,000 fish / sec</strong> forever.</div>
+    <button id="rocky-popup-close">Amazing!</button>
   </div>
 </div>
 
@@ -27,6 +53,13 @@
     </div>
     <button id="fish-btn" title="Click to catch fish!">🐟</button>
     <div id="click-power">Each click: <span id="click-val">1</span> fish</div>
+    <div id="rocky-display" class="hidden">
+      <span class="rocky-icon">🐟</span>
+      <div id="rocky-label">
+        <div class="rocky-name">Rocky <span id="rocky-count"></span></div>
+        <div class="rocky-stat" id="rocky-stat">+10,000 fish / sec</div>
+      </div>
+    </div>
     <div id="milestone-ticker"></div>
   </div>
 
@@ -53,7 +86,10 @@
 
 </div>
 
-<div id="news"><span id="news-text">Welcome to FishClicker! Click the fish to start your fishing empire...</span></div>
+<div id="news">
+  <span id="news-label">📡 Breaking News!</span>
+  <div id="news-scroll"><span id="news-text">Welcome to FishClicker! Click the fish to start your fishing empire...</span></div>
+</div>
 
 <script>
 // ── State ──────────────────────────────────────────────────────────────────
@@ -62,7 +98,10 @@ const state = {
   allTimeFish: 0,
   clickPower: 1,
   fishPerSec: 0,
-  buyQty: 1,       // 1 | 10 | 50 | 100 | 'max'
+  buyQty: 1,
+  clickCount: 0,
+  lastClickTime: Date.now(),
+  rockyCount: 0,
 };
 
 // ── Buildings ──────────────────────────────────────────────────────────────
@@ -182,6 +221,60 @@ const NEWS_LINES = [
 ];
 
 
+// ── Achievements ───────────────────────────────────────────────────────────
+const ACHIEVEMENTS = [
+  // Fish collected
+  { id: 'a_f1',  name: 'First Catch',           icon: '🐟', secret: false, unlocked: false, desc: 'Collect your first fish.',                                    check: () => state.allTimeFish >= 1 },
+  { id: 'a_f2',  name: 'Pocket Full of Fish',   icon: '👜', secret: false, unlocked: false, desc: 'Collect 1,000 fish.',                                         check: () => state.allTimeFish >= 1000 },
+  { id: 'a_f3',  name: 'Fish Hoarder',          icon: '📦', secret: false, unlocked: false, desc: 'Collect 1,000,000 fish.',                                     check: () => state.allTimeFish >= 1e6 },
+  { id: 'a_f4',  name: 'Fish Baron',            icon: '🎩', secret: false, unlocked: false, desc: 'Collect 1 Billion fish.',                                     check: () => state.allTimeFish >= 1e9 },
+  { id: 'a_f5',  name: 'Fish Tycoon',           icon: '💰', secret: false, unlocked: false, desc: 'Collect 1 Trillion fish.',                                    check: () => state.allTimeFish >= 1e12 },
+  { id: 'a_f6',  name: 'Fish God',              icon: '✨', secret: false, unlocked: false, desc: 'Collect 1 Quadrillion fish.',                                 check: () => state.allTimeFish >= 1e15 },
+  { id: 'a_f7',  name: 'The Ocean Itself',      icon: '🌊', secret: false, unlocked: false, desc: 'Collect 1 Quintillion fish.',                                 check: () => state.allTimeFish >= 1e18 },
+  // Production speed
+  { id: 'a_p1',  name: 'Getting Somewhere',     icon: '⚙️', secret: false, unlocked: false, desc: 'Reach 10 fish/sec.',                                          check: () => state.fishPerSec >= 10 },
+  { id: 'a_p2',  name: 'Industrious',           icon: '🏭', secret: false, unlocked: false, desc: 'Reach 1,000 fish/sec.',                                       check: () => state.fishPerSec >= 1000 },
+  { id: 'a_p3',  name: 'Fish Factory',          icon: '🔩', secret: false, unlocked: false, desc: 'Reach 1,000,000 fish/sec.',                                   check: () => state.fishPerSec >= 1e6 },
+  { id: 'a_p4',  name: 'Unstoppable',           icon: '💥', secret: false, unlocked: false, desc: 'Reach 1 Billion fish/sec.',                                   check: () => state.fishPerSec >= 1e9 },
+  // Buildings
+  { id: 'a_b1',  name: 'First Rod',             icon: '🎣', secret: false, unlocked: false, desc: 'Buy your first Fishing Rod.',                                 check: () => getBldg('rod').count >= 1 },
+  { id: 'a_b2',  name: 'Rod Army',              icon: '🎣', secret: false, unlocked: false, desc: 'Own 50 Fishing Rods.',                                        check: () => getBldg('rod').count >= 50 },
+  { id: 'a_b3',  name: 'Go Deeper',             icon: '🤿', secret: false, unlocked: false, desc: 'Buy your first Submarine.',                                   check: () => getBldg('submarine').count >= 1 },
+  { id: 'a_b4',  name: 'It Opens',              icon: '🌀', secret: false, unlocked: false, desc: 'Open your first Fish Portal.',                                check: () => getBldg('portal').count >= 1 },
+  { id: 'a_b5',  name: 'Hired a God',           icon: '🐙', secret: false, unlocked: false, desc: 'Employ your first Ocean Deity.',                              check: () => getBldg('deity').count >= 1 },
+  { id: 'a_b6',  name: 'Kraken Released',       icon: '🦑', secret: false, unlocked: false, desc: 'Acquire your first Kraken.',                                  check: () => getBldg('kraken').count >= 1 },
+  { id: 'a_b7',  name: 'Full Fleet',            icon: '🚢', secret: false, unlocked: false, desc: 'Own at least 1 of every building type.',                     check: () => BUILDINGS.every(b => b.count >= 1) },
+  { id: 'a_b8',  name: 'Century Club',          icon: '💯', secret: false, unlocked: false, desc: 'Own 100 of any single building.',                             check: () => BUILDINGS.some(b => b.count >= 100) },
+  { id: 'a_b9',  name: 'Mass Production',       icon: '🏗️', secret: false, unlocked: false, desc: 'Own 500 buildings total.',                                    check: () => BUILDINGS.reduce((s,b)=>s+b.count,0) >= 500 },
+  { id: 'a_b10', name: 'Star Fleet',            icon: '⭐', secret: false, unlocked: false, desc: 'Own your first Fish Star.',                                   check: () => getBldg('fishstar').count >= 1 },
+  // Clicks
+  { id: 'a_c1',  name: 'Eager Fingers',         icon: '👆', secret: false, unlocked: false, desc: 'Click the fish 100 times.',                                   check: () => state.clickCount >= 100 },
+  { id: 'a_c2',  name: 'Dedicated',             icon: '👊', secret: false, unlocked: false, desc: 'Click the fish 1,000 times.',                                 check: () => state.clickCount >= 1000 },
+  { id: 'a_c3',  name: 'Carpal Tunnel Incoming',icon: '🖱️', secret: false, unlocked: false, desc: 'Click the fish 10,000 times.',                                check: () => state.clickCount >= 10000 },
+  // Upgrades
+  { id: 'a_u1',  name: 'Upgrade Curious',       icon: '🔬', secret: false, unlocked: false, desc: 'Buy 5 upgrades.',                                             check: () => UPGRADES.filter(u=>u.bought).length >= 5 },
+  { id: 'a_u2',  name: 'Upgrade Enthusiast',    icon: '🧪', secret: false, unlocked: false, desc: 'Buy 20 upgrades.',                                            check: () => UPGRADES.filter(u=>u.bought).length >= 20 },
+  { id: 'a_u3',  name: 'Max Potential',         icon: '🏆', secret: false, unlocked: false, desc: 'Buy every single upgrade.',                                   check: () => UPGRADES.every(u=>u.bought) },
+  // ── Secret / Easter eggs ──
+  { id: 'a_s1',  name: 'Speed Demon',           icon: '⚡', secret: true,  unlocked: false, desc: 'Click 10 times within 1 second. Your finger is a weapon.',   check: () => false }, // triggered in recordClick
+  { id: 'a_s2',  name: 'The Answer',            icon: '🔢', secret: true,  unlocked: false, desc: '42. The answer to life, the universe, and fish.',             check: () => BUILDINGS.some(b => b.count === 42) },
+  { id: 'a_s3',  name: 'Lonely Fisherman',      icon: '🏝️', secret: true,  unlocked: false, desc: 'Do not click for 3 minutes. The fish came to you.',          check: () => state.allTimeFish > 0 && Date.now() - state.lastClickTime > 180000 },
+  { id: 'a_s4',  name: 'Night Owl',             icon: '🦉', secret: true,  unlocked: false, desc: 'Fish between midnight and 4 AM. Everything okay?',           check: () => { const h = new Date().getHours(); return h >= 0 && h < 4; } },
+  { id: 'a_s5',  name: 'Totally Broke',         icon: '😭', secret: true,  unlocked: false, desc: 'Spend down to less than 1 fish. Respect.',                   check: () => false }, // triggered after buy
+  { id: 'a_s6',  name: 'Overkill',              icon: '💣', secret: true,  unlocked: false, desc: 'Buy 100 buildings in a single click. Subtle.',               check: () => false }, // triggered on buy
+  { id: 'a_s7',  name: "It's Over 9000",        icon: '🔥', secret: true,  unlocked: false, desc: 'Reach more than 9,000 fish/sec. WHAT, NINE THOUSAND?!',      check: () => state.fishPerSec > 9000 },
+  { id: 'a_s8',  name: 'Portal Addict',         icon: '💫', secret: true,  unlocked: false, desc: 'Own 50 Fish Portals. The fabric of reality is coping.',      check: () => getBldg('portal').count >= 50 },
+  { id: 'a_s9',  name: 'Still Waiting...',      icon: '😴', secret: true,  unlocked: false, desc: 'Idle for 10 minutes without clicking.',                      check: () => state.allTimeFish > 0 && Date.now() - state.lastClickTime > 600000 },
+  { id: 'a_s10', name: 'Leet',                  icon: '💻', secret: true,  unlocked: false, desc: 'Have exactly 1337 fish at once.',                            check: () => Math.floor(state.fish) === 1337 },
+  { id: 'a_s11', name: 'Who Needs Buildings?',  icon: '📊', secret: true,  unlocked: false, desc: 'Reach 500 all-time fish with zero buildings owned.',         check: () => state.allTimeFish >= 500 && BUILDINGS.every(b=>b.count===0) },
+  { id: 'a_s12', name: 'Kraken Middle Manager', icon: '📋', secret: true,  unlocked: false, desc: 'Own exactly 25 Krakens.',                                    check: () => getBldg('kraken').count === 25 },
+  { id: 'a_s13', name: 'Time Paradox',          icon: '⏰', secret: true,  unlocked: false, desc: 'Own 10 Time Ponds.',                                         check: () => getBldg('timepond').count >= 10 },
+  { id: 'a_s14', name: 'Deity Convention',      icon: '🌐', secret: true,  unlocked: false, desc: 'Own 10 Ocean Deities. The paperwork alone is staggering.',   check: () => getBldg('deity').count >= 10 },
+  { id: 'a_s15', name: 'Naughty Naughty',      icon: '🤖', secret: true,  unlocked: false, desc: 'An inhuman clicking pattern was detected. We see you.',       check: () => false }, // triggered in recordClick
+];
+
+function getAchievement(id) { return ACHIEVEMENTS.find(a => a.id === id); }
+
 // ── Helpers ────────────────────────────────────────────────────────────────
 function getBldg(id) { return BUILDINGS.find(b => b.id === id); }
 
@@ -220,12 +313,32 @@ function fmt(n) {
 
 // ── Click rate tracking ────────────────────────────────────────────────────
 const clickTimestamps = [];
-const CLICK_KEEP   = 5;    // buffer size — rate based on last N clicks
-const CLICK_EXPIRE = 1000; // ms; clear rate if no click within this time
+const CLICK_KEEP   = 5;
+const CLICK_EXPIRE = 1000;
+
+// Auto-clicker detection: track last 20 intervals
+const clickIntervals = [];
+const AC_WINDOW = 20; // intervals to analyse
+let lastClickTs = null;
 
 function recordClick() {
-  clickTimestamps.push(Date.now());
+  const now = Date.now();
+  clickTimestamps.push(now);
   if (clickTimestamps.length > CLICK_KEEP) clickTimestamps.shift();
+
+  if (lastClickTs !== null) {
+    clickIntervals.push(now - lastClickTs);
+    if (clickIntervals.length > AC_WINDOW) clickIntervals.shift();
+
+    // Detect auto-clicker: 20 intervals with very low variance and fast rate
+    if (clickIntervals.length === AC_WINDOW) {
+      const mean = clickIntervals.reduce((a, b) => a + b, 0) / AC_WINDOW;
+      const stddev = Math.sqrt(clickIntervals.reduce((s, v) => s + (v - mean) ** 2, 0) / AC_WINDOW);
+      // Human clicks vary >30ms std-dev; auto-clickers are suspiciously uniform
+      if (mean < 150 && stddev < 15) triggerAchievement('a_s15');
+    }
+  }
+  lastClickTs = now;
 }
 
 function clickFps() {
@@ -258,6 +371,7 @@ function calcFps() {
   BUILDINGS.forEach(b => {
     total += b.count * b.baseFps * bMult[b.id] * globalMult;
   });
+  total += state.rockyCount * 10000;
   state.fishPerSec = total;
 }
 
@@ -268,6 +382,22 @@ function effectiveFps(b) {
     if (u.type === 'global') mult *= u.mult;
   });
   return b.baseFps * mult;
+}
+
+// ── Rocky ──────────────────────────────────────────────────────────────────
+function discoverRocky() {
+  state.rockyCount++;
+  calcFps();
+  // update badge
+  const display = document.getElementById('rocky-display');
+  display.classList.remove('hidden');
+  document.getElementById('rocky-count').textContent = state.rockyCount > 1 ? `×${state.rockyCount}` : '';
+  document.getElementById('rocky-stat').textContent = `+${(state.rockyCount * 10000).toLocaleString()} fish / sec`;
+  // show legendary overlay
+  const overlay = document.getElementById('rocky-overlay');
+  overlay.classList.remove('hidden');
+  document.getElementById('rocky-popup-close').onclick = () => overlay.classList.add('hidden');
+  overlay.onclick = e => { if (e.target === overlay) overlay.classList.add('hidden'); };
 }
 
 function calcClickPower() {
@@ -303,7 +433,7 @@ function renderBuildings() {
       <div class="b-info">
         <div class="b-name">${b.name}</div>
         <div class="b-desc">${b.desc}</div>
-        <div class="b-cost">🐟 ${label}${fmt(cost)} &nbsp;|&nbsp; +${fmt(effectiveFps(b))}/s each</div>
+        <div class="b-cost">🐟 ${label}${fmt(cost)} &nbsp;|&nbsp; +${fmt(effectiveFps(b))}/s each${state.fishPerSec > 0 && b.count > 0 ? ` <span class="b-pct">(${(b.count * effectiveFps(b) / state.fishPerSec * 100).toFixed(1)}%)</span>` : ''}</div>
       </div>
       <div class="b-count-wrap">${buyQtyHtml}<span class="b-count">${b.count}</span></div>`;
     list.appendChild(row);
@@ -322,7 +452,7 @@ function updateBuildingAffordability() {
     const costEl = row.querySelector('.b-cost');
     if (costEl) {
       const label = qty > 1 ? `×${qty} ` : '';
-      costEl.innerHTML = `🐟 ${label}${fmt(cost)} &nbsp;|&nbsp; +${fmt(effectiveFps(b))}/s each`;
+      costEl.innerHTML = `🐟 ${label}${fmt(cost)} &nbsp;|&nbsp; +${fmt(effectiveFps(b))}/s each${state.fishPerSec > 0 && b.count > 0 ? ` <span class="b-pct">(${(b.count * effectiveFps(b) / state.fishPerSec * 100).toFixed(1)}%)</span>` : ''}`;
     }
     const wrap = row.querySelector('.b-count-wrap');
     if (wrap) {
@@ -378,10 +508,14 @@ function buyBuilding(b) {
   state.fish -= cost;
   b.count += qty;
   calcFps();
-  renderBuildings(); // full rebuild: count changed
-  renderUpgrades();  // full rebuild: new upgrades may unlock
+  renderBuildings();
+  renderUpgrades();
   lastUpgradeSnapshot = upgradeSnapshot();
   renderStats();
+  // Secret achievement checks
+  if (qty >= 100) triggerAchievement('a_s6');        // Overkill
+  if (state.fish < 1) triggerAchievement('a_s5');    // Totally Broke
+  checkAchievements();
 }
 
 function buyUpgrade(u) {
@@ -393,6 +527,8 @@ function buyUpgrade(u) {
   renderUpgrades();
   lastUpgradeSnapshot = upgradeSnapshot();
   renderStats();
+  if (state.fish < 1) triggerAchievement('a_s5');
+  checkAchievements();
 }
 
 // ── Click handler ──────────────────────────────────────────────────────────
@@ -400,7 +536,15 @@ const fishBtn = document.getElementById('fish-btn');
 fishBtn.addEventListener('click', (e) => {
   state.fish += state.clickPower;
   state.allTimeFish += state.clickPower;
+  state.clickCount++;
+  state.lastClickTime = Date.now();
   recordClick();
+  if (Math.random() < 1e-6) discoverRocky();
+  // Speed Demon: 10 clicks within 1 second
+  if (clickTimestamps.length >= 10) {
+    const span = clickTimestamps[clickTimestamps.length - 1] - clickTimestamps[clickTimestamps.length - 10];
+    if (span <= 1000) triggerAchievement('a_s1');
+  }
 
   // floating label
   const panel = document.getElementById('clicker-panel');
@@ -417,6 +561,75 @@ fishBtn.addEventListener('click', (e) => {
   checkMilestones();
   renderStats();
 });
+
+// ── Achievement logic ──────────────────────────────────────────────────────
+function unlockAchievement(a) {
+  if (a.unlocked) return;
+  a.unlocked = true;
+  showAchievementToast(a);
+  renderAchievementsPanel();
+}
+
+function showAchievementToast(a) {
+  const container = document.getElementById('toast-container');
+  const toast = document.createElement('div');
+  toast.className = 'ach-toast';
+  toast.innerHTML = `<span class="ach-toast-icon">${a.icon}</span><div><div class="ach-toast-title">Achievement Unlocked! — click to view</div><div class="ach-toast-name">${a.name}</div></div>`;
+  container.appendChild(toast);
+
+  toast.addEventListener('click', () => {
+    document.getElementById('ach-overlay').classList.remove('hidden');
+    renderAchievementsPanel();
+    // Wait one frame for the grid to be in the DOM, then scroll & highlight
+    requestAnimationFrame(() => {
+      const card = document.querySelector(`#ach-grid [data-id="${a.id}"]`);
+      if (card) {
+        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        card.classList.add('ach-highlight');
+        setTimeout(() => card.classList.remove('ach-highlight'), 2000);
+      }
+    });
+  });
+
+  requestAnimationFrame(() => toast.classList.add('show'));
+  setTimeout(() => {
+    toast.classList.remove('show');
+    toast.addEventListener('transitionend', () => toast.remove(), { once: true });
+  }, 4000);
+}
+
+function checkAchievements() {
+  ACHIEVEMENTS.forEach(a => {
+    if (!a.unlocked && a.check()) unlockAchievement(a);
+  });
+}
+
+function triggerAchievement(id) {
+  const a = getAchievement(id);
+  if (a) unlockAchievement(a);
+}
+
+function renderAchievementsPanel() {
+  const grid = document.getElementById('ach-grid');
+  if (!grid) return;
+  const total    = ACHIEVEMENTS.length;
+  const unlocked = ACHIEVEMENTS.filter(a => a.unlocked).length;
+  document.getElementById('ach-count').textContent = `${unlocked} / ${total}`;
+  grid.innerHTML = '';
+  ACHIEVEMENTS.forEach(a => {
+    const card = document.createElement('div');
+    const isHidden = a.secret && !a.unlocked;
+    card.className = 'ach-card' + (a.unlocked ? ' unlocked' : ' locked') + (a.secret && !a.unlocked ? ' secret' : '');
+    card.dataset.id = a.id;
+    card.innerHTML = `
+      <div class="ach-card-icon">${isHidden ? '🔒' : a.icon}</div>
+      <div class="ach-card-body">
+        <div class="ach-card-name">${isHidden ? '???' : a.name}</div>
+        <div class="ach-card-desc">${isHidden ? 'Keep playing to discover this secret.' : a.desc}</div>
+      </div>`;
+    grid.appendChild(card);
+  });
+}
 
 // ── Milestones ─────────────────────────────────────────────────────────────
 const MILESTONES = [
@@ -449,7 +662,7 @@ function showMilestone(msg) {
 // ── News ticker ────────────────────────────────────────────────────────────
 (function initNews() {
   const el  = document.getElementById('news-text');
-  const bar = document.getElementById('news');
+  const bar = document.getElementById('news-scroll');
   let idx   = 0;
 
   function showNext() {
@@ -493,9 +706,10 @@ function gameLoop(timestamp) {
   if (renderAccum >= 0.1) {
     renderAccum = 0;
     renderStats();
-    updateBuildingAffordability(); // lightweight: just toggles .locked class
-    maybeRenderUpgrades();         // only rebuilds if visible/affordable set changed
+    updateBuildingAffordability();
+    maybeRenderUpgrades();
     checkMilestones();
+    checkAchievements();
   }
 
   requestAnimationFrame(gameLoop);
@@ -506,8 +720,11 @@ function saveGame() {
   const data = {
     fish: state.fish,
     allTimeFish: state.allTimeFish,
+    clickCount: state.clickCount,
     buildings: BUILDINGS.map(b => ({ id: b.id, count: b.count })),
     upgrades: UPGRADES.filter(u => u.bought).map(u => u.id),
+    achievements: ACHIEVEMENTS.filter(a => a.unlocked).map(a => a.id),
+    rockyCount: state.rockyCount,
   };
   localStorage.setItem('fishclicker_save', JSON.stringify(data));
 }
@@ -519,6 +736,7 @@ function loadGame() {
     const data = JSON.parse(raw);
     state.fish = data.fish || 0;
     state.allTimeFish = data.allTimeFish || 0;
+    state.clickCount = data.clickCount || 0;
     data.buildings.forEach(s => {
       const b = getBldg(s.id);
       if (b) b.count = s.count;
@@ -527,6 +745,17 @@ function loadGame() {
       const u = UPGRADES.find(u => u.id === uid);
       if (u) u.bought = true;
     });
+    (data.achievements || []).forEach(aid => {
+      const a = getAchievement(aid);
+      if (a) a.unlocked = true;
+    });
+    if (data.rockyCount) {
+      state.rockyCount = data.rockyCount;
+      const display = document.getElementById('rocky-display');
+      display.classList.remove('hidden');
+      document.getElementById('rocky-count').textContent = state.rockyCount > 1 ? `×${state.rockyCount}` : '';
+      document.getElementById('rocky-stat').textContent = `+${(state.rockyCount * 10000).toLocaleString()} fish / sec`;
+    }
     calcFps();
     calcClickPower();
   } catch (e) { /* ignore corrupt save */ }
@@ -550,6 +779,19 @@ function initListeners() {
     if (u) buyUpgrade(u);
   });
 
+  // Achievements panel open/close
+  document.getElementById('ach-btn').addEventListener('click', () => {
+    document.getElementById('ach-overlay').classList.toggle('hidden');
+    renderAchievementsPanel();
+  });
+  document.getElementById('ach-close').addEventListener('click', () => {
+    document.getElementById('ach-overlay').classList.add('hidden');
+  });
+  document.getElementById('ach-overlay').addEventListener('click', e => {
+    if (e.target === document.getElementById('ach-overlay'))
+      document.getElementById('ach-overlay').classList.add('hidden');
+  });
+
   // Quantity bar
   document.getElementById('qty-bar').addEventListener('click', e => {
     const btn = e.target.closest('.qty-btn');
@@ -566,6 +808,7 @@ renderStats();
 renderBuildings();
 renderUpgrades();
 lastUpgradeSnapshot = upgradeSnapshot();
+renderAchievementsPanel();
 initListeners();
 requestAnimationFrame(gameLoop);
 setInterval(saveGame, 10000); // auto-save every 10s
