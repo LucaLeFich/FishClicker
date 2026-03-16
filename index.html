@@ -12,6 +12,7 @@
   <h1>🐟 FishClicker</h1>
   <div id="header-center">
     <button id="ach-btn" title="Achievements">🏆 Achievements</button>
+    <button id="gamble-btn" title="Gambling Den">🎰 Gamble</button>
   </div>
   <div>
     <div id="fish-count">0 fish</div>
@@ -27,6 +28,42 @@
       <button id="ach-close">✕</button>
     </div>
     <div id="ach-grid"></div>
+  </div>
+</div>
+
+<div id="gamble-overlay" class="hidden">
+  <div id="gamble-panel">
+    <div id="gamble-header">
+      <h2>🎰 Gambling Den</h2>
+      <button id="gamble-close">✕</button>
+    </div>
+    <div id="blackjack">
+      <div id="bj-dealer-area">
+        <div class="bj-label">Dealer <span id="bj-dealer-score"></span></div>
+        <div id="bj-dealer-cards" class="bj-cards"></div>
+      </div>
+      <div id="bj-message"></div>
+      <div id="bj-player-area">
+        <div class="bj-label">You <span id="bj-player-score"></span></div>
+        <div id="bj-player-cards" class="bj-cards"></div>
+      </div>
+      <div id="bj-bet-area">
+        <span class="bj-bet-label">Bet:</span>
+        <button class="bj-bet-btn" data-bet="10">10</button>
+        <button class="bj-bet-btn" data-bet="100">100</button>
+        <button class="bj-bet-btn" data-bet="1000">1K</button>
+        <button class="bj-bet-btn" data-bet="10000">10K</button>
+        <button class="bj-bet-btn" data-bet="100000">100K</button>
+        <button class="bj-bet-btn" data-bet="allin">All In 🐟</button>
+      </div>
+      <div id="bj-current-bet">No bet placed</div>
+      <div id="bj-controls">
+        <button id="bj-deal">🃏 Deal</button>
+        <button id="bj-hit" disabled>Hit</button>
+        <button id="bj-stand" disabled>Stand</button>
+        <button id="bj-double" disabled>Double Down</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -218,6 +255,14 @@ const NEWS_LINES = [
   'Scientists confirm fish have been collectively pretending not to understand economics.',
   'Time Pond glitch sends 40 fish to the Jurassic era. They adapt immediately.',
   'Breaking: the ocean calls. It wants its fish back. You decline.',
+  'Local gambler bets entire trawler fleet on blackjack. Dealer had 21. Fleet gone.',
+  'Gambling Den reports record profits. Player insists they were "definitely winning."',
+  'Man doubles down on 19. Crowd gasps. Man does not elaborate.',
+  'Fish casino introduces new game: "Go Fish." Legal team advises against it.',
+  'Blackjack dealer revealed to be a sentient halibut. Union dispute pending.',
+  'Player goes all-in with 4 billion fish. Gets blackjack. Ocean weeps.',
+  'Gambling addiction hotline now accepts fish as payment. Irony noted.',
+  '"I had a system," says man with zero fish.',
 ];
 
 
@@ -271,6 +316,13 @@ const ACHIEVEMENTS = [
   { id: 'a_s13', name: 'Time Paradox',          icon: '⏰', secret: true,  unlocked: false, desc: 'Own 10 Time Ponds.',                                         check: () => getBldg('timepond').count >= 10 },
   { id: 'a_s14', name: 'Deity Convention',      icon: '🌐', secret: true,  unlocked: false, desc: 'Own 10 Ocean Deities. The paperwork alone is staggering.',   check: () => getBldg('deity').count >= 10 },
   { id: 'a_s15', name: 'Naughty Naughty',      icon: '🤖', secret: true,  unlocked: false, desc: 'An inhuman clicking pattern was detected. We see you.',       check: () => false }, // triggered in recordClick
+  // Gambling
+  { id: 'a_g1',  name: 'Feeling Lucky',        icon: '🎰', secret: false, unlocked: false, desc: 'Place your first bet in the Gambling Den.',                   check: () => false }, // triggered
+  { id: 'a_g2',  name: 'Blackjack!',           icon: '🃏', secret: false, unlocked: false, desc: 'Get a natural Blackjack (21 on first two cards).',            check: () => false }, // triggered
+  { id: 'a_g3',  name: 'All In',               icon: '💸', secret: false, unlocked: false, desc: 'Go all-in and win the hand.',                                 check: () => false }, // triggered
+  { id: 'a_g4',  name: 'Busted',               icon: '💥', secret: true,  unlocked: false, desc: 'Bust for the first time. It happens to everyone. Once.',      check: () => false }, // triggered
+  { id: 'a_g5',  name: 'On a Roll',            icon: '🔥', secret: false, unlocked: false, desc: 'Win 5 Blackjack hands in a row.',                             check: () => false }, // triggered
+  { id: 'a_g6',  name: 'Fish Casino',          icon: '🏛️', secret: true,  unlocked: false, desc: 'Win more than 1,000,000 fish in a single Blackjack payout.',  check: () => false }, // triggered in bjFinish
 ];
 
 function getAchievement(id) { return ACHIEVEMENTS.find(a => a.id === id); }
@@ -689,6 +741,201 @@ function showMilestone(msg) {
   showNext();
 })();
 
+// ── Blackjack ──────────────────────────────────────────────────────────────
+const SUITS = ['♠','♥','♦','♣'];
+const RANKS = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+
+const BJ = {
+  deck: [],
+  playerHand: [],
+  dealerHand: [],
+  bet: 0,
+  state: 'idle',       // idle | playing | done
+  consecutiveWins: 0,
+  allInBet: false,
+};
+
+function bjBuildDeck() {
+  BJ.deck = [];
+  for (let d = 0; d < 6; d++)
+    for (const suit of SUITS)
+      for (const rank of RANKS)
+        BJ.deck.push({ rank, suit, red: suit === '♥' || suit === '♦' });
+  for (let i = BJ.deck.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [BJ.deck[i], BJ.deck[j]] = [BJ.deck[j], BJ.deck[i]];
+  }
+}
+
+function bjCardVal(rank) {
+  if (rank === 'A') return 11;
+  if (['J','Q','K'].includes(rank)) return 10;
+  return parseInt(rank);
+}
+
+function bjScore(hand) {
+  let total = 0, aces = 0;
+  for (const c of hand) { total += bjCardVal(c.rank); if (c.rank === 'A') aces++; }
+  while (total > 21 && aces-- > 0) total -= 10;
+  return total;
+}
+
+function bjDraw() {
+  if (BJ.deck.length < 15) bjBuildDeck();
+  return BJ.deck.pop();
+}
+
+function bjCardEl(card, faceDown = false) {
+  const el = document.createElement('div');
+  el.className = 'bj-card' + (card.red ? ' red' : '') + (faceDown ? ' face-down' : '');
+  if (faceDown) {
+    el.innerHTML = '<span class="bj-card-back">🂠</span>';
+  } else {
+    el.innerHTML = `<span class="bj-rank">${card.rank}</span><span class="bj-suit">${card.suit}</span>`;
+  }
+  return el;
+}
+
+function bjRender(hideSecondDealer = true) {
+  const pEl = document.getElementById('bj-player-cards');
+  const dEl = document.getElementById('bj-dealer-cards');
+  pEl.innerHTML = ''; dEl.innerHTML = '';
+  BJ.playerHand.forEach(c => pEl.appendChild(bjCardEl(c)));
+  BJ.dealerHand.forEach((c, i) => dEl.appendChild(bjCardEl(c, hideSecondDealer && i === 1)));
+  document.getElementById('bj-player-score').textContent =
+    BJ.playerHand.length ? `(${bjScore(BJ.playerHand)})` : '';
+  if (hideSecondDealer && BJ.dealerHand.length) {
+    document.getElementById('bj-dealer-score').textContent = `(${bjCardVal(BJ.dealerHand[0].rank)})`;
+  } else {
+    document.getElementById('bj-dealer-score').textContent =
+      BJ.dealerHand.length ? `(${bjScore(BJ.dealerHand)})` : '';
+  }
+}
+
+function bjMsg(text, type = '') {
+  const el = document.getElementById('bj-message');
+  el.textContent = text;
+  el.className = type ? `bj-msg-${type}` : '';
+}
+
+function bjSetPlaying(active) {
+  document.getElementById('bj-deal').disabled   = active;
+  document.getElementById('bj-hit').disabled    = !active;
+  document.getElementById('bj-stand').disabled  = !active;
+  document.getElementById('bj-double').disabled = !active;
+  document.querySelectorAll('.bj-bet-btn').forEach(b => b.disabled = active);
+}
+
+function bjDeal() {
+  if (BJ.bet <= 0)          { bjMsg('Set a bet first!', 'warn'); return; }
+  if (state.fish < BJ.bet)  { bjMsg('Not enough fish!', 'warn'); return; }
+  triggerAchievement('a_g1');
+  state.fish -= BJ.bet;
+  renderStats();
+  if (BJ.deck.length < 15) bjBuildDeck();
+  BJ.playerHand = [bjDraw(), bjDraw()];
+  BJ.dealerHand = [bjDraw(), bjDraw()];
+  BJ.state = 'playing';
+  bjRender(true);
+  bjSetPlaying(true);
+  bjMsg('');
+  document.getElementById('bj-double').disabled = state.fish < BJ.bet;
+  if (bjScore(BJ.playerHand) === 21) bjFinish('blackjack');
+}
+
+function bjHit() {
+  BJ.playerHand.push(bjDraw());
+  bjRender(true);
+  document.getElementById('bj-double').disabled = true;
+  const s = bjScore(BJ.playerHand);
+  if (s > 21) bjFinish('bust');
+  else if (s === 21) bjStand();
+}
+
+async function bjStand() {
+  bjRender(false);
+  bjSetPlaying(false);
+  BJ.state = 'dealer';
+  while (bjScore(BJ.dealerHand) < 17) {
+    await new Promise(r => setTimeout(r, 480));
+    BJ.dealerHand.push(bjDraw());
+    bjRender(false);
+  }
+  const d = bjScore(BJ.dealerHand), p = bjScore(BJ.playerHand);
+  if (d > 21 || p > d) bjFinish('win');
+  else if (p === d)    bjFinish('push');
+  else                 bjFinish('lose');
+}
+
+function bjDouble() {
+  if (state.fish < BJ.bet) { bjMsg('Not enough fish to double!', 'warn'); return; }
+  state.fish -= BJ.bet;
+  BJ.bet *= 2;
+  document.getElementById('bj-current-bet').textContent = `Bet: ${fmt(BJ.bet)} 🐟`;
+  renderStats();
+  BJ.playerHand.push(bjDraw());
+  bjRender(true);
+  const s = bjScore(BJ.playerHand);
+  if (s > 21) bjFinish('bust');
+  else bjStand();
+}
+
+function bjFinish(result) {
+  BJ.state = 'done';
+  bjRender(false);
+  bjSetPlaying(false);
+  let payout = 0;
+  if (result === 'blackjack') {
+    payout = Math.floor(BJ.bet * 2.5);
+    bjMsg(`🃏 Blackjack! You win ${fmt(payout)} 🐟`, 'win');
+    triggerAchievement('a_g2');
+  } else if (result === 'win') {
+    payout = BJ.bet * 2;
+    bjMsg(`🎉 You win ${fmt(payout)} 🐟!`, 'win');
+  } else if (result === 'push') {
+    payout = BJ.bet;
+    bjMsg('🤝 Push — bet returned.', 'push');
+  } else if (result === 'bust') {
+    bjMsg(`💥 Bust! You lose ${fmt(BJ.bet)} 🐟.`, 'lose');
+  } else {
+    bjMsg(`😔 Dealer wins. You lose ${fmt(BJ.bet)} 🐟.`, 'lose');
+  }
+  if (payout > 0) {
+    state.fish += payout;
+    renderStats();
+    if (payout >= 1000000) triggerAchievement('a_g6');
+  }
+  // streak tracking
+  if (result === 'win' || result === 'blackjack') {
+    BJ.consecutiveWins++;
+    if (BJ.consecutiveWins >= 5) triggerAchievement('a_g5');
+    if (BJ.allInBet) triggerAchievement('a_g3');
+  } else if (result !== 'push') {
+    BJ.consecutiveWins = 0;
+  }
+  if (result === 'bust') triggerAchievement('a_g4');
+  BJ.allInBet = false;
+  checkAchievements();
+}
+
+function bjSetBet(raw) {
+  let amount;
+  if (raw === 'allin') {
+    amount = Math.floor(state.fish);
+    BJ.allInBet = true;
+  } else {
+    amount = parseInt(raw);
+    BJ.allInBet = false;
+  }
+  if (amount <= 0) { bjMsg('You have no fish to bet!', 'warn'); return; }
+  BJ.bet = amount;
+  document.getElementById('bj-current-bet').textContent = `Bet: ${fmt(BJ.bet)} 🐟`;
+  document.querySelectorAll('.bj-bet-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.bet === raw));
+}
+
+bjBuildDeck();
+
 // ── Game loop ──────────────────────────────────────────────────────────────
 let lastTime = null;
 let renderAccum = 0;
@@ -791,6 +1038,28 @@ function initListeners() {
     if (e.target === document.getElementById('ach-overlay'))
       document.getElementById('ach-overlay').classList.add('hidden');
   });
+
+  // Gambling Den open/close
+  document.getElementById('gamble-btn').addEventListener('click', () => {
+    document.getElementById('gamble-overlay').classList.toggle('hidden');
+  });
+  document.getElementById('gamble-close').addEventListener('click', () => {
+    document.getElementById('gamble-overlay').classList.add('hidden');
+  });
+  document.getElementById('gamble-overlay').addEventListener('click', e => {
+    if (e.target === document.getElementById('gamble-overlay'))
+      document.getElementById('gamble-overlay').classList.add('hidden');
+  });
+
+  // Blackjack bet buttons
+  document.getElementById('gamble-panel').addEventListener('click', e => {
+    const bb = e.target.closest('.bj-bet-btn');
+    if (bb && !bb.disabled) { bjSetBet(bb.dataset.bet); return; }
+  });
+  document.getElementById('bj-deal').addEventListener('click', bjDeal);
+  document.getElementById('bj-hit').addEventListener('click', bjHit);
+  document.getElementById('bj-stand').addEventListener('click', bjStand);
+  document.getElementById('bj-double').addEventListener('click', bjDouble);
 
   // Quantity bar
   document.getElementById('qty-bar').addEventListener('click', e => {
