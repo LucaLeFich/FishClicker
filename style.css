@@ -144,6 +144,7 @@ body {
 }
 #fish-stats .total { font-size: 1.5rem; font-weight: bold; color: #fff; }
 #fish-stats .sub   { font-size: 0.8rem; color: #7ac8e8; }
+#stat-alltime { margin-top: 4px; }
 
 #fish-btn {
   width: 160px;
@@ -155,6 +156,7 @@ body {
   font-size: 90px;
   line-height: 160px;
   text-align: center;
+  -webkit-user-select: none;
   user-select: none;
   transition: transform 0.06s, box-shadow 0.06s;
   box-shadow: 0 0 30px rgba(30,168,208,0.35);
@@ -357,6 +359,7 @@ body {
   padding: 8px 12px;
   cursor: pointer;
   transition: background 0.2s, border-color 0.2s;
+  -webkit-user-select: none;
   user-select: none;
 }
 .building-row:hover:not(.locked) { background: rgba(20,80,130,0.75); border-color: #3a8ac0; }
