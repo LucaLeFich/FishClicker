@@ -928,22 +928,51 @@ function rlNumberColor(n) {
   return RL_RED.has(n) ? 'red' : 'black';
 }
 
-function rlInit() {
+function rlHighlightNums(betType) {
+  const all = Array.from({length: 36}, (_, i) => i + 1);
+  switch (betType) {
+    case 'zero':   return new Set([0]);
+    case 'red':    return new Set(all.filter(n => RL_RED.has(n)));
+    case 'black':  return new Set(all.filter(n => !RL_RED.has(n)));
+    case 'odd':    return new Set(all.filter(n => n % 2 === 1));
+    case 'even':   return new Set(all.filter(n => n % 2 === 0));
+    case 'low':    return new Set(all.filter(n => n <= 18));
+    case 'high':   return new Set(all.filter(n => n >= 19));
+    case 'dozen1': return new Set(all.filter(n => n <= 12));
+    case 'dozen2': return new Set(all.filter(n => n >= 13 && n <= 24));
+    case 'dozen3': return new Set(all.filter(n => n >= 25));
+    default:       return new Set();
+  }
+}
+
+let rlPulseRAF = null;
+
+function rlDrawWheel(highlighted = new Set(), pulse = 1) {
   const canvas = document.getElementById('rl-canvas');
   const ctx    = canvas.getContext('2d');
-  const size   = canvas.width;          // 170
+  const size   = canvas.width;
   const cx = size / 2, cy = size / 2;
   const outerR = size / 2;
-  const numR   = outerR * 0.76;         // radius where numbers sit
+  const numR   = outerR * 0.76;
   const seg    = (Math.PI * 2) / 37;
 
+  ctx.clearRect(0, 0, size, size);
+
   RL_ORDER.forEach((n, i) => {
-    const startAngle = i * seg - Math.PI / 2;   // start from 12 o'clock
+    const startAngle = i * seg - Math.PI / 2;
     const endAngle   = startAngle + seg;
     const color = rlNumberColor(n);
-    const fill  = color === 'green' ? '#1a7a1a' : color === 'red' ? '#9a1010' : '#151515';
+    const lit   = highlighted.has(n);
+    let fill;
+    if (!lit) {
+      fill = color === 'green' ? '#1a7a1a' : color === 'red' ? '#9a1010' : '#151515';
+    } else {
+      // interpolate between dim and bright using pulse (0..1)
+      if (color === 'green') fill = `rgb(${Math.round(26 + 229*pulse)},${Math.round(122 + 110*pulse)},${Math.round(26)})`;
+      else if (color === 'red') fill = `rgb(${Math.round(154 + 101*pulse)},${Math.round(16 + 239*pulse)},${Math.round(16 + 239*pulse)})`;
+      else fill = `rgb(${Math.round(21 + 234*pulse)},${Math.round(21 + 234*pulse)},${Math.round(21 + 234*pulse)})`;
+    }
 
-    // Segment
     ctx.beginPath();
     ctx.moveTo(cx, cy);
     ctx.arc(cx, cy, outerR, startAngle, endAngle);
@@ -954,7 +983,6 @@ function rlInit() {
     ctx.lineWidth = 0.8;
     ctx.stroke();
 
-    // Number label
     const midAngle = startAngle + seg / 2;
     const tx = cx + Math.cos(midAngle) * numR;
     const ty = cy + Math.sin(midAngle) * numR;
@@ -970,6 +998,23 @@ function rlInit() {
   });
 
   canvas.style.transform = `rotate(${RL.currentRotation}deg)`;
+}
+
+function rlStartPulse() {
+  if (rlPulseRAF) cancelAnimationFrame(rlPulseRAF);
+  const highlighted = rlHighlightNums(RL.betType);
+  function frame() {
+    if (RL.spinning) return; // pause during spin
+    const raw = (Math.sin(Date.now() / 650) + 1) / 2;   // faster cycle
+    const pulse = Math.pow(raw, 6);                       // sharp spike — dim most of the time, quick bright flash
+    rlDrawWheel(highlighted, pulse);
+    rlPulseRAF = requestAnimationFrame(frame);
+  }
+  rlPulseRAF = requestAnimationFrame(frame);
+}
+
+function rlInit() {
+  rlStartPulse();
 }
 
 function rlMsg(text, type) {
@@ -1025,6 +1070,8 @@ async function rlSpin() {
   if (state.fish < RL.bet) { rlMsg('Not enough fish!', 'warn'); return; }
 
   RL.spinning = true;
+  if (rlPulseRAF) { cancelAnimationFrame(rlPulseRAF); rlPulseRAF = null; }
+  rlDrawWheel(new Set(), 0); // reset all segments to normal colors before spin
   document.getElementById('rl-spin').disabled = true;
   state.fish -= RL.bet;
   renderStats();
@@ -1068,6 +1115,8 @@ async function rlSpin() {
   if (result === 0 && payout === 0) triggerAchievement('a_r3');
 
   RL.currentRotation = totalRot;
+  wheelEl.style.transition = '';
+  rlStartPulse();
   renderStats();
   checkAchievements();
 
@@ -1328,6 +1377,7 @@ function initListeners() {
     if (tb) {
       RL.betType = tb.dataset.type;
       document.querySelectorAll('.rl-type-btn').forEach(b => b.classList.toggle('active', b === tb));
+      rlStartPulse();
     }
   });
   document.getElementById('rl-spin').addEventListener('click', rlSpin);
