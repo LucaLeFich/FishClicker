@@ -49,8 +49,16 @@
       </div>
       <div id="bj-message"></div>
       <div id="bj-player-area">
-        <div class="bj-label">You <span id="bj-player-score"></span></div>
-        <div id="bj-player-cards" class="bj-cards"></div>
+        <div id="bj-hands-wrap">
+          <div id="bj-main-hand">
+            <div class="bj-label">You <span id="bj-player-score"></span></div>
+            <div id="bj-player-cards" class="bj-cards"></div>
+          </div>
+          <div id="bj-split-area" class="hidden">
+            <div class="bj-label">Split <span id="bj-split-score"></span></div>
+            <div id="bj-split-cards" class="bj-cards"></div>
+          </div>
+        </div>
       </div>
       <div id="bj-bet-area">
         <span class="bj-bet-label">Bet:</span>
@@ -67,6 +75,7 @@
         <button id="bj-hit" disabled>Hit</button>
         <button id="bj-stand" disabled>Stand</button>
         <button id="bj-double" disabled>Double Down</button>
+        <button id="bj-split" disabled>Split</button>
       </div>
     </div>
     <div id="roulette" class="gamble-game hidden">

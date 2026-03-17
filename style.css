@@ -735,6 +735,21 @@ body {
 #bj-controls button:disabled { opacity: 0.35; cursor: not-allowed; }
 #bj-deal { border-color: #dd99ff; color: #fff; font-weight: bold; }
 #bj-deal:not(:disabled):hover { background: rgba(130,30,190,0.95); }
+#bj-split { border-color: #ffcc44; color: #ffcc44; }
+#bj-split:not(:disabled):hover { background: rgba(140,100,0,0.5); }
+
+#bj-hands-wrap {
+  display: flex;
+  gap: 20px;
+}
+#bj-main-hand, #bj-split-area {
+  flex: 1;
+}
+.bj-active-hand {
+  outline: 2px solid #cc88ff;
+  border-radius: 8px;
+  padding: 6px;
+}
 
 /* ── Gamble tabs ── */
 #gamble-tabs {
