@@ -193,7 +193,8 @@ const ACHIEVEMENTS = [
   { id: 'a_g5',  name: 'On a Roll',            icon: '🔥', secret: false, unlocked: false, desc: 'Win 5 Blackjack hands in a row.',                             check: () => false }, // triggered
   { id: 'a_g6',  name: 'Fish Casino',          icon: '🏛️', secret: true,  unlocked: false, desc: 'Win more than 1,000,000 fish in a single Blackjack payout.',  check: () => false }, // triggered in bjFinish
   // Roulette
-  { id: 'a_r1',  name: 'Lucky Zero',           icon: '🟢', secret: true,  unlocked: false, desc: 'Land on 0 in roulette. The house weeps alongside you.',        check: () => false }, // triggered
+  { id: 'a_r1',  name: 'Lucky Zero',            icon: '🟢', secret: true,  unlocked: false, desc: 'Bet on green and land on 0. The house weeps.',              check: () => false }, // triggered
+  { id: 'a_r3',  name: 'Unlucky Zero',         icon: '😬', secret: true,  unlocked: false, desc: 'Land on 0 without betting on green. So close, yet so far.',   check: () => false }, // triggered
   { id: 'a_r2',  name: 'Red and Black',        icon: '🎡', secret: false, unlocked: false, desc: 'Win 5 roulette spins in a row.',                               check: () => false }, // triggered
 ];
 
@@ -1063,7 +1064,8 @@ async function rlSpin() {
     RL.consecutiveWins = 0;
     rlMsg(`${result} — ${color.toUpperCase()}. You lose ${fmt(RL.bet)} 🐟.`, 'lose');
   }
-  if (result === 0) triggerAchievement('a_r1');
+  if (result === 0 && payout > 0)  triggerAchievement('a_r1');
+  if (result === 0 && payout === 0) triggerAchievement('a_r3');
 
   RL.currentRotation = totalRot;
   renderStats();
