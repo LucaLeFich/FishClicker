@@ -743,7 +743,7 @@ function bjDeal() {
   bjSetPlaying(true);
   bjMsg('');
   document.getElementById('bj-double').disabled = state.fish < BJ.bet;
-  const canSplit = BJ.playerHand[0].rank === BJ.playerHand[1].rank && state.fish >= BJ.bet;
+  const canSplit = bjCardVal(BJ.playerHand[0].rank) === bjCardVal(BJ.playerHand[1].rank) && state.fish >= BJ.bet;
   document.getElementById('bj-split').disabled = !canSplit;
   if (bjScore(BJ.playerHand) === 21) bjFinish('blackjack');
 }
@@ -854,6 +854,8 @@ function bjFinishSplit(dealerScore) {
   BJ.allInBet = false;
   BJ.bet = BJ.originalBet;
   document.getElementById('bj-current-bet').textContent = `Bet: ${fmt(BJ.bet)} 🐟`;
+  bjSetPlaying(false);
+  bjRender(false);
   checkAchievements();
 }
 

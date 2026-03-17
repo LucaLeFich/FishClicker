@@ -745,6 +745,7 @@ body {
 #bj-main-hand, #bj-split-area {
   flex: 1;
 }
+#bj-split-area.hidden { display: none; }
 .bj-active-hand {
   outline: 2px solid #cc88ff;
   border-radius: 8px;
