@@ -241,9 +241,9 @@ const clickTimestamps = [];
 const CLICK_KEEP   = 5;
 const CLICK_EXPIRE = 1000;
 
-// Auto-clicker detection: track last 20 intervals
+// Auto-clicker detection: track last 30 intervals
 const clickIntervals = [];
-const AC_WINDOW = 20; // intervals to analyse
+const AC_WINDOW = 30; // need 30 consecutive suspicious intervals
 let lastClickTs = null;
 
 function recordClick() {
@@ -255,12 +255,13 @@ function recordClick() {
     clickIntervals.push(now - lastClickTs);
     if (clickIntervals.length > AC_WINDOW) clickIntervals.shift();
 
-    // Detect auto-clicker: 20 intervals with very low variance and fast rate
+    // Detect auto-clicker: 30 intervals that are impossibly fast AND robotically uniform.
+    // mean < 70ms  → >14 cps, essentially impossible to sustain by hand
+    // stddev < 8ms → variance so low no human wrist can match it
     if (clickIntervals.length === AC_WINDOW) {
-      const mean = clickIntervals.reduce((a, b) => a + b, 0) / AC_WINDOW;
+      const mean   = clickIntervals.reduce((a, b) => a + b, 0) / AC_WINDOW;
       const stddev = Math.sqrt(clickIntervals.reduce((s, v) => s + (v - mean) ** 2, 0) / AC_WINDOW);
-      // Human clicks vary >30ms std-dev; auto-clickers are suspiciously uniform
-      if (mean < 150 && stddev < 15) triggerAchievement('a_s15');
+      if (mean < 70 && stddev < 8) triggerAchievement('a_s15');
     }
   }
   lastClickTs = now;
