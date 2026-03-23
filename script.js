@@ -192,6 +192,8 @@ const ACHIEVEMENTS = [
   { id: 'a_s14', name: 'Deity Convention',      icon: '🌐', secret: true,  unlocked: false, desc: 'Own 10 Ocean Deities. The paperwork alone is staggering.',   check: () => getBldg('deity').count >= 10 },
   { id: 'a_s15', name: 'Naughty Naughty',      icon: '🤖', secret: true,  unlocked: false, desc: 'An inhuman clicking pattern was detected. We see you.',       check: () => false }, // triggered in recordClick
   { id: 'a_s16', name: 'Hello There',          icon: '👋', secret: true,  unlocked: false, desc: 'You found the secret fish. It was just sitting there, waiting.', check: () => false }, // triggered by title fish click
+  { id: 'a_s17', name: 'Stop the Presses',     icon: '📰', secret: true,  unlocked: false, desc: 'You clicked Breaking News. Was it actually breaking?',           check: () => false }, // triggered by news label click
+  { id: 'a_s18', name: 'Click Me',             icon: '👆', secret: false, unlocked: false, desc: 'I wonder how to unlock it...',                                  check: () => false }, // triggered by clicking the card
   // Gambling
   { id: 'a_g1',  name: 'Feeling Lucky',        icon: '🎰', secret: false, unlocked: false, desc: 'Place your first bet in the Gambling Den.',                   check: () => false }, // triggered
   { id: 'a_g2',  name: 'Blackjack!',           icon: '🃏', secret: false, unlocked: false, desc: 'Get a natural Blackjack (21 on first two cards).',            check: () => false }, // triggered
@@ -641,8 +643,10 @@ function renderAchievementsPanel() {
       <div class="ach-card-icon">${isHidden ? '🔒' : a.icon}</div>
       <div class="ach-card-body">
         <div class="ach-card-name">${isHidden ? '???' : a.name}</div>
-        <div class="ach-card-desc">${isHidden ? 'Keep playing to discover this secret.' : a.desc}</div>
+        <div class="ach-card-desc">${isHidden ? 'Keep playing to discover this secret.' : a.id === 'a_s18' && a.unlocked ? 'Well... you clicked me. Good Job !' : a.desc}</div>
       </div>`;
+    if (a.id === 'a_s18' && !a.unlocked) card.style.cursor = 'pointer';
+    if (a.id === 'a_s18') card.addEventListener('click', () => triggerAchievement('a_s18'));
     grid.appendChild(card);
   });
 }
@@ -1422,6 +1426,11 @@ function initListeners() {
   // Secret title fish
   document.getElementById('title-fish').addEventListener('click', () => {
     triggerAchievement('a_s16');
+  });
+
+  // Secret breaking news
+  document.getElementById('news-label').addEventListener('click', () => {
+    triggerAchievement('a_s17');
   });
 
   // Achievements panel open/close

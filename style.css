@@ -441,6 +441,8 @@ body {
   border-right: 1px solid #2a5a7a;
   margin-right: 10px;
   white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
 }
 #news-scroll {
   flex: 1;
