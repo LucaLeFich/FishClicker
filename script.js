@@ -8,6 +8,8 @@ const state = {
   clickCount: 0,
   lastClickTime: Date.now(),
   rockyCount: 0,
+  activeSkin: 'default',
+  ownedSkins: ['default'],
   // Blackjack stats
   bjHands: 0, bjWins: 0, bjLosses: 0, bjPushes: 0, bjBlackjacks: 0,
   bjWagered: 0, bjWon: 0, bjBiggestWin: 0, bjBestStreak: 0,
@@ -32,6 +34,37 @@ const BUILDINGS = [
   { id: 'timepond',  name: 'Time Pond',        icon: '⏳', baseCost: 15000000000,  baseFps: 375000,   desc: 'Fish from the past, present, and future arrive simultaneously. Scheduling nightmare.', count: 0 },
   { id: 'fishstar',  name: 'Fish Star',        icon: '⭐', baseCost: 100000000000, baseFps: 1600000,  desc: 'A star made of compressed fish. Warm. Smells indescribable.',             count: 0 },
 ];
+
+// ── Skins ──────────────────────────────────────────────────────────────────
+const SKINS = [
+  { id: 'default',   icon: '🐟', name: 'Default Fish',     cost: 0,              desc: 'A classic. Timeless. Slightly damp.' },
+  { id: 'puffer',    icon: '🐡', name: 'Pufferfish',       cost: 1000,           desc: "Don't touch." },
+  { id: 'shrimp',    icon: '🦐', name: 'Shrimp',           cost: 5000,           desc: 'Tiny but fierce.' },
+  { id: 'tropical',  icon: '🐠', name: 'Tropical Fish',    cost: 15000,          desc: 'Too pretty to eat. You click it anyway.' },
+  { id: 'crab',      icon: '🦀', name: 'Crab',             cost: 50000,          desc: 'CRAB. CRAB. CRAB.' },
+  { id: 'squid',     icon: '🦑', name: 'Squid',            cost: 200000,         desc: "Kraken's less impressive cousin." },
+  { id: 'lobster',   icon: '🦞', name: 'Lobster',          cost: 500000,         desc: 'Expensive everywhere.' },
+  { id: 'shark',     icon: '🦈', name: 'Shark',            cost: 2000000,        desc: 'The hunter becomes the clicked.' },
+  { id: 'dolphin',   icon: '🐬', name: 'Dolphin',          cost: 10000000,       desc: "They're laughing at you." },
+  { id: 'penguin',   icon: '🐧', name: 'Penguin',          cost: 25000000,       desc: 'Formally dressed. Determined to click.' },
+  { id: 'octopus',   icon: '🐙', name: 'Octopus',          cost: 100000000,      desc: 'Eight arms, zero productivity.' },
+  { id: 'whale',     icon: '🐳', name: 'Whale',            cost: 500000000,      desc: 'You feel like a good person.' },
+  { id: 'sushi',     icon: '🍣', name: 'Sushi',            cost: 1000000000,     desc: 'A grim fate.' },
+  { id: 'starfish',  icon: '⭐', name: 'Star Fish',        cost: 10000000000,    desc: 'Resident of the Fish Star.',                       effect: 'sparkle' },
+  { id: 'wave',      icon: '🌊', name: 'The Ocean',        cost: 100000000000,   desc: 'You have become the ocean itself.',                 effect: 'ocean'   },
+  { id: 'diamond',   icon: '🐟', name: 'Legendary Fish',   cost: 1000000000000,  desc: 'Just a fish. A very, very special fish.',           effect: 'rainbow' },
+];
+
+function getSkin(id) { return SKINS.find(s => s.id === id) || SKINS[0]; }
+const SKIN_EFFECTS = ['skin-fx-sparkle', 'skin-fx-ocean', 'skin-fx-rainbow'];
+function applyActiveSkin() {
+  const skin = getSkin(state.activeSkin);
+  const btn = document.getElementById('fish-btn');
+  if (!btn) return;
+  btn.textContent = skin.icon;
+  SKIN_EFFECTS.forEach(cls => btn.classList.remove(cls));
+  if (skin.effect) btn.classList.add(`skin-fx-${skin.effect}`);
+}
 
 // ── Upgrades ───────────────────────────────────────────────────────────────
 const UPGRADES = [
@@ -132,7 +165,6 @@ const NEWS_LINES = [
   'Local gambler bets entire trawler fleet on blackjack. Dealer had 21. Fleet gone.',
   'Gambling Den reports record profits. Player insists they were "definitely winning."',
   'Man doubles down on 19. Crowd gasps. Man does not elaborate.',
-  'Fish casino introduces new game: "Go Fish." Legal team advises against it.',
   'Blackjack dealer revealed to be a sentient halibut. Union dispute pending.',
   'Player goes all-in with 4 billion fish. Gets blackjack. Ocean weeps.',
   'Gambling addiction hotline now accepts fish as payment. Irony noted.',
@@ -442,6 +474,47 @@ function renderGambleStats() {
         <div class="gstat"><span class="gstat-label">Net P/L</span><span class="gstat-val ${(bjNet+rlNet) >= 0 ? 'gstat-win' : 'gstat-lose'}">🐟 ${sign(bjNet + rlNet)}</span></div>
       </div>
     </div>`;
+}
+
+// ── Skin Shop ───────────────────────────────────────────────────────────────
+function renderSkinShop() {
+  const grid = document.getElementById('skin-grid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  SKINS.forEach(skin => {
+    const owned    = state.ownedSkins.includes(skin.id);
+    const active   = state.activeSkin === skin.id;
+    const canAfford = state.fish >= skin.cost;
+    const card = document.createElement('div');
+    card.className = 'skin-card' + (active ? ' skin-active' : '') + (owned ? ' skin-owned' : '');
+    card.innerHTML = `
+      <div class="skin-icon${skin.effect ? ` skin-fx-${skin.effect}` : ''}">${skin.icon}</div>
+      <div class="skin-name">${skin.name}</div>
+      <div class="skin-desc">${skin.desc}</div>
+      <div class="skin-footer">
+        ${active
+          ? '<button class="skin-btn equipped" disabled>Equipped</button>'
+          : owned
+            ? `<button class="skin-btn equip">Equip</button>`
+            : `<button class="skin-btn buy${canAfford ? '' : ' locked'}" ${canAfford ? '' : 'disabled'}>🐟 ${fmt(skin.cost)}</button>`
+        }
+      </div>`;
+    card.querySelector('.skin-btn.equip')?.addEventListener('click', () => {
+      state.activeSkin = skin.id;
+      applyActiveSkin();
+      renderSkinShop();
+    });
+    card.querySelector('.skin-btn.buy:not(.locked)')?.addEventListener('click', () => {
+      if (state.fish < skin.cost) return;
+      state.fish -= skin.cost;
+      state.ownedSkins.push(skin.id);
+      state.activeSkin = skin.id;
+      applyActiveSkin();
+      renderStats();
+      renderSkinShop();
+    });
+    grid.appendChild(card);
+  });
 }
 
 // ── Render ─────────────────────────────────────────────────────────────────
@@ -1399,6 +1472,9 @@ function loadGame() {
       document.getElementById('rocky-count').textContent = state.rockyCount > 1 ? `×${state.rockyCount}` : '';
       document.getElementById('rocky-stat').textContent = `+${(state.rockyCount * 10000).toLocaleString()} fish / sec`;
     }
+    if (data.activeSkin) state.activeSkin = data.activeSkin;
+    if (data.ownedSkins) state.ownedSkins = data.ownedSkins;
+    applyActiveSkin();
     calcFps();
     calcClickPower();
   } catch (e) { /* ignore corrupt save */ }
@@ -1413,6 +1489,8 @@ function getSaveData() {
     upgrades: UPGRADES.filter(u => u.bought).map(u => u.id),
     achievements: ACHIEVEMENTS.filter(a => a.unlocked).map(a => a.id),
     rockyCount: state.rockyCount,
+    activeSkin: state.activeSkin,
+    ownedSkins: state.ownedSkins,
     bjHands: state.bjHands, bjWins: state.bjWins, bjLosses: state.bjLosses,
     bjPushes: state.bjPushes, bjBlackjacks: state.bjBlackjacks,
     bjWagered: state.bjWagered, bjWon: state.bjWon,
@@ -1456,6 +1534,9 @@ function importSave(str) {
     } else {
       document.getElementById('rocky-display').classList.add('hidden');
     }
+    if (data.activeSkin) state.activeSkin = data.activeSkin;
+    if (data.ownedSkins) state.ownedSkins = data.ownedSkins;
+    applyActiveSkin();
     calcFps();
     calcClickPower();
     saveGame();
@@ -1567,6 +1648,19 @@ function initListeners() {
       document.getElementById('save-overlay').classList.add('hidden');
   });
 
+  // Skin shop open/close
+  document.getElementById('shop-btn').addEventListener('click', () => {
+    document.getElementById('shop-overlay').classList.toggle('hidden');
+    renderSkinShop();
+  });
+  document.getElementById('shop-close').addEventListener('click', () => {
+    document.getElementById('shop-overlay').classList.add('hidden');
+  });
+  document.getElementById('shop-overlay').addEventListener('click', e => {
+    if (e.target === document.getElementById('shop-overlay'))
+      document.getElementById('shop-overlay').classList.add('hidden');
+  });
+
   // Copy to clipboard
   document.getElementById('save-copy-btn').addEventListener('click', () => {
     const txt = document.getElementById('save-export-text').value;
@@ -1630,6 +1724,7 @@ function initListeners() {
 
 loadGame();
 rlInit();
+applyActiveSkin();
 renderStats();
 renderBuildings();
 renderUpgrades();

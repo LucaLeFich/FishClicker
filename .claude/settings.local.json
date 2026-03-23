@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(d:/P_APPRO2/FishClicker/style.css:*)"
+    ]
+  }
+}
