@@ -185,6 +185,7 @@ const ACHIEVEMENTS = [
   { id: 'a_s13', name: 'Time Paradox',          icon: '⏰', secret: true,  unlocked: false, desc: 'Own 10 Time Ponds.',                                         check: () => getBldg('timepond').count >= 10 },
   { id: 'a_s14', name: 'Deity Convention',      icon: '🌐', secret: true,  unlocked: false, desc: 'Own 10 Ocean Deities. The paperwork alone is staggering.',   check: () => getBldg('deity').count >= 10 },
   { id: 'a_s15', name: 'Naughty Naughty',      icon: '🤖', secret: true,  unlocked: false, desc: 'An inhuman clicking pattern was detected. We see you.',       check: () => false }, // triggered in recordClick
+  { id: 'a_s16', name: 'Hello There',          icon: '👋', secret: true,  unlocked: false, desc: 'You found the secret fish. It was just sitting there, waiting.', check: () => false }, // triggered by title fish click
   // Gambling
   { id: 'a_g1',  name: 'Feeling Lucky',        icon: '🎰', secret: false, unlocked: false, desc: 'Place your first bet in the Gambling Den.',                   check: () => false }, // triggered
   { id: 'a_g2',  name: 'Blackjack!',           icon: '🃏', secret: false, unlocked: false, desc: 'Get a natural Blackjack (21 on first two cards).',            check: () => false }, // triggered
@@ -1273,6 +1274,11 @@ function initListeners() {
     if (!btn || btn.disabled) return;
     const u = UPGRADES.find(u => u.id === btn.dataset.id);
     if (u) buyUpgrade(u);
+  });
+
+  // Secret title fish
+  document.getElementById('title-fish').addEventListener('click', () => {
+    triggerAchievement('a_s16');
   });
 
   // Achievements panel open/close

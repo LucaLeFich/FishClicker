@@ -25,6 +25,7 @@ body {
   flex-shrink: 0;
 }
 #header h1 { font-size: 1.6rem; color: #5dd8ff; text-shadow: 0 0 12px #3ab0e0; }
+#title-fish { cursor: pointer; user-select: none; }
 #fish-count { font-size: 1.1rem; color: #a0deff; }
 #fish-per-sec { font-size: 0.85rem; color: #6ab8e0; }
 #ach-btn, #save-btn {
