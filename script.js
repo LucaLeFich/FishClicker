@@ -1255,6 +1255,8 @@ function bjSetBet(raw) {
   document.getElementById('bj-current-bet').textContent = `Bet: ${fmt(BJ.bet)} 🐟`;
   document.querySelectorAll('.bj-bet-btn').forEach(b =>
     b.classList.toggle('active', b.dataset.bet === raw));
+  document.getElementById('bj-potential-gain').textContent =
+    `Win: +${fmt(BJ.bet)} | Blackjack: +${fmt(Math.floor(BJ.bet * 1.5))} 🐟`;
 }
 
 bjBuildDeck();
@@ -1380,6 +1382,14 @@ function updateBetButtons() {
     .forEach((btn, i) => { btn.dataset.bet = amounts[i]; btn.textContent = fmt(amounts[i]); });
 }
 
+const RL_MULT = { zero: 36, red: 2, black: 2, odd: 2, even: 2, low: 2, high: 3, dozen1: 3, dozen2: 3, dozen3: 3 };
+function rlUpdatePotentialGain() {
+  const el = document.getElementById('rl-potential-gain');
+  if (!RL.bet) { el.textContent = ''; return; }
+  const mult = RL_MULT[RL.betType] || 2;
+  el.textContent = `Win: +${fmt(RL.bet * (mult - 1))} 🐟 (${mult}x)`;
+}
+
 function rlSetBet(raw) {
   const amount = raw === 'allin' ? Math.floor(state.fish) : parseInt(raw);
   if (amount <= 0) { rlMsg('You have no fish to bet!', 'warn'); return; }
@@ -1387,6 +1397,7 @@ function rlSetBet(raw) {
   RL.bet = amount;
   document.getElementById('rl-current-bet').textContent = `Bet: ${fmt(RL.bet)} 🐟`;
   document.querySelectorAll('.rl-amount-btn').forEach(b => b.classList.toggle('active', b.dataset.bet === raw));
+  rlUpdatePotentialGain();
 }
 
 function rlCalcPayout(result, betType, bet) {
@@ -1789,6 +1800,7 @@ function initListeners() {
     if (tb) {
       RL.betType = tb.dataset.type;
       document.querySelectorAll('.rl-type-btn').forEach(b => b.classList.toggle('active', b === tb));
+      rlUpdatePotentialGain();
       rlStartPulse();
     }
   });

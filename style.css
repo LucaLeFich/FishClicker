@@ -734,6 +734,14 @@ body {
   white-space: nowrap;
 }
 
+#bj-potential-gain {
+  text-align: center;
+  font-size: 0.78rem;
+  color: #a0e080;
+  margin-top: 2px;
+  min-height: 1em;
+}
+
 /* ── Action buttons ── */
 #bj-controls {
   display: flex;
@@ -920,6 +928,14 @@ body {
   font-weight: bold;
   white-space: nowrap;
   margin-left: 4px;
+}
+
+#rl-potential-gain {
+  text-align: center;
+  font-size: 0.78rem;
+  color: #a0e080;
+  margin-top: 2px;
+  min-height: 1em;
 }
 
 .rl-amount-btn {
