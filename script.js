@@ -197,8 +197,9 @@ const ACHIEVEMENTS = [
   { id: 'a_s19', name: 'Card Hoarder',         icon: '🃏', secret: true,  unlocked: false, desc: 'Hold more than 4 cards in a single hand. Were you counting on a miracle?', check: () => false }, // triggered in bjHit
   // Gambling
   { id: 'a_g1',  name: 'Feeling Lucky',        icon: '🎰', secret: false, unlocked: false, desc: 'Place your first bet in the Gambling Den.',                   check: () => false }, // triggered
-  { id: 'a_g2',  name: 'Blackjack!',           icon: '🃏', secret: false, unlocked: false, desc: 'Get a natural Blackjack (21 on first two cards).',            check: () => false }, // triggered
   { id: 'a_g3',  name: 'All In',               icon: '💸', secret: false, unlocked: false, desc: 'Go all-in and win the hand.',                                 check: () => false }, // triggered
+  // Blackjack
+  { id: 'a_g2',  name: 'Blackjack!',           icon: '🃏', secret: false, unlocked: false, desc: 'Get a natural Blackjack (21 on first two cards).',            check: () => false }, // triggered
   { id: 'a_g4',  name: 'Busted',               icon: '💥', secret: true,  unlocked: false, desc: 'Bust for the first time. It happens to everyone. Once.',      check: () => false }, // triggered
   { id: 'a_g5',  name: 'On a Roll',            icon: '🔥', secret: false, unlocked: false, desc: 'Win 5 Blackjack hands in a row.',                             check: () => false }, // triggered
   { id: 'a_g6',  name: 'Fish Casino',          icon: '🏛️', secret: true,  unlocked: false, desc: 'Win more than 1,000,000 fish in a single Blackjack payout.',  check: () => false }, // triggered in bjFinish
