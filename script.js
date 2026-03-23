@@ -330,9 +330,18 @@ function discoverRocky() {
   document.getElementById('rocky-stat').textContent = `+${(state.rockyCount * 10000).toLocaleString()} fish / sec`;
   // show legendary overlay
   const overlay = document.getElementById('rocky-overlay');
+  const closeBtn = document.getElementById('rocky-popup-close');
   overlay.classList.remove('hidden');
-  document.getElementById('rocky-popup-close').onclick = () => overlay.classList.add('hidden');
-  overlay.onclick = e => { if (e.target === overlay) overlay.classList.add('hidden'); };
+
+  let rockyAfkTimer = setTimeout(() => overlay.classList.add('hidden'), 60000);
+
+  function closeRocky(e) {
+    if (e.detail === 0) return; // block keyboard-triggered clicks (Enter/Space)
+    clearTimeout(rockyAfkTimer);
+    overlay.classList.add('hidden');
+    closeBtn.removeEventListener('click', closeRocky);
+  }
+  closeBtn.addEventListener('click', closeRocky);
 }
 
 function calcClickPower() {
@@ -725,6 +734,7 @@ const BJ = {
   state: 'idle',       // idle | playing | done
   consecutiveWins: 0,
   allInBet: false,
+  betRaw: null,        // tracks selected bet option key
 };
 
 function bjActiveHand() { return BJ.activeHand === 0 ? BJ.playerHand : BJ.splitHand; }
@@ -955,8 +965,7 @@ function bjFinishSplit(dealerScore) {
   BJ.splitBet = 0;
   BJ.activeHand = 0;
   BJ.allInBet = false;
-  BJ.bet = BJ.originalBet;
-  document.getElementById('bj-current-bet').textContent = `Bet: ${fmt(BJ.bet)} 🐟`;
+  if (BJ.betRaw) bjSetBet(BJ.betRaw); else { BJ.bet = BJ.originalBet; document.getElementById('bj-current-bet').textContent = `Bet: ${fmt(BJ.bet)} 🐟`; }
   bjSetPlaying(false);
   bjRender(false);
   checkAchievements();
@@ -1008,9 +1017,7 @@ function bjFinish(result) {
   if (bjNet > state.bjBiggestWin) state.bjBiggestWin = bjNet;
   if (BJ.consecutiveWins > state.bjBestStreak) state.bjBestStreak = BJ.consecutiveWins;
   BJ.allInBet = false;
-  // Restore bet to pre-double amount
-  BJ.bet = BJ.originalBet;
-  document.getElementById('bj-current-bet').textContent = `Bet: ${fmt(BJ.bet)} 🐟`;
+  if (BJ.betRaw) bjSetBet(BJ.betRaw); else { BJ.bet = BJ.originalBet; document.getElementById('bj-current-bet').textContent = `Bet: ${fmt(BJ.bet)} 🐟`; }
   checkAchievements();
 }
 
@@ -1024,6 +1031,7 @@ function bjSetBet(raw) {
     BJ.allInBet = false;
   }
   if (amount <= 0) { bjMsg('You have no fish to bet!', 'warn'); return; }
+  BJ.betRaw = raw;
   BJ.bet = amount;
   document.getElementById('bj-current-bet').textContent = `Bet: ${fmt(BJ.bet)} 🐟`;
   document.querySelectorAll('.bj-bet-btn').forEach(b =>
@@ -1037,7 +1045,7 @@ const RL_RED   = new Set([1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36]);
 const RL_ORDER = [0,32,15,19,4,21,2,25,17,34,6,27,13,36,11,30,8,23,10,5,24,16,33,1,20,14,31,9,22,18,29,7,28,12,35,3,26];
 
 const RL_INIT_ROT = -(360 / 37) / 2;   // aligns pointer to center of segment 0 (green)
-const RL = { bet: 0, betType: 'red', spinning: false, consecutiveWins: 0, currentRotation: RL_INIT_ROT };
+const RL = { bet: 0, betRaw: null, betType: 'red', spinning: false, consecutiveWins: 0, currentRotation: RL_INIT_ROT };
 
 function rlNumberColor(n) {
   if (n === 0) return 'green';
@@ -1156,6 +1164,7 @@ function updateBetButtons() {
 function rlSetBet(raw) {
   const amount = raw === 'allin' ? Math.floor(state.fish) : parseInt(raw);
   if (amount <= 0) { rlMsg('You have no fish to bet!', 'warn'); return; }
+  RL.betRaw = raw;
   RL.bet = amount;
   document.getElementById('rl-current-bet').textContent = `Bet: ${fmt(RL.bet)} 🐟`;
   document.querySelectorAll('.rl-amount-btn').forEach(b => b.classList.toggle('active', b.dataset.bet === raw));
@@ -1250,6 +1259,7 @@ async function rlSpin() {
 
   RL.spinning = false;
   document.getElementById('rl-spin').disabled = false;
+  if (RL.betRaw) rlSetBet(RL.betRaw);
 }
 
 // ── Game loop ──────────────────────────────────────────────────────────────
