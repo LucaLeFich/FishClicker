@@ -778,7 +778,7 @@ function updateBuffDisplay() {
 
 // Spawn a falling fish every 45–90 seconds
 function scheduleFallingFish() {
-  const delay = (45 + Math.random() * 45) * 1000;
+  const delay = (120 + Math.random() * 120) * 1000;
   fallingFishTimer = setTimeout(() => {
     spawnFallingFish();
     scheduleFallingFish();
