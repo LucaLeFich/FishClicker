@@ -676,8 +676,9 @@ function buyUpgrade(u) {
 // ── Click handler ──────────────────────────────────────────────────────────
 const fishBtn = document.getElementById('fish-btn');
 fishBtn.addEventListener('click', () => {
-  state.fish += state.clickPower;
-  state.allTimeFish += state.clickPower;
+  const gained = state.clickPower * getClickMultiplier();
+  state.fish += gained;
+  state.allTimeFish += gained;
   state.clickCount++;
   state.lastClickTime = Date.now();
   recordClick();
@@ -694,7 +695,7 @@ fishBtn.addEventListener('click', () => {
   const pRect = panel.getBoundingClientRect();
   const floater = document.createElement('div');
   floater.className = 'floater';
-  floater.textContent = '+' + fmt(state.clickPower);
+  floater.textContent = '+' + fmt(gained);
   floater.style.left = (rect.left - pRect.left + Math.random() * 80 - 20) + 'px';
   floater.style.top  = (rect.top  - pRect.top  + Math.random() * 40)      + 'px';
   panel.appendChild(floater);
@@ -703,6 +704,87 @@ fishBtn.addEventListener('click', () => {
   checkMilestones();
   renderStats();
 });
+
+// ── Falling Fish ───────────────────────────────────────────────────────────
+const FALLING_FISH_ICON = '🐠';
+let fallingFishEl    = null;
+let fallingFishTimer = null; // spawn interval handle
+let clickBuffEnd     = 0;    // timestamp when x2 buff expires
+let clickBuffTicker  = null;
+
+function getClickMultiplier() {
+  return Date.now() < clickBuffEnd ? 2 : 1;
+}
+
+function spawnFallingFish() {
+  if (fallingFishEl) return; // already one on screen
+  const el = document.createElement('div');
+  el.id = 'falling-fish';
+  el.textContent = FALLING_FISH_ICON;
+  const dur = 6 + Math.random() * 5; // 6–11s to fall
+  el.style.setProperty('--fall-dur', dur + 's');
+  el.style.left = (5 + Math.random() * 85) + 'vw';
+  document.body.appendChild(el);
+  fallingFishEl = el;
+
+  el.addEventListener('click', () => {
+    catchFallingFish();
+  });
+
+  // Remove if it reaches the bottom without being clicked
+  fallingFishEl._removeTimer = setTimeout(() => {
+    if (fallingFishEl === el) {
+      el.remove();
+      fallingFishEl = null;
+    }
+  }, (dur + 0.2) * 1000);
+}
+
+function catchFallingFish() {
+  if (!fallingFishEl) return;
+  clearTimeout(fallingFishEl._removeTimer);
+  fallingFishEl.remove();
+  fallingFishEl = null;
+
+  clickBuffEnd = Date.now() + 30000;
+  updateBuffDisplay();
+
+  clearInterval(clickBuffTicker);
+  clickBuffTicker = setInterval(() => {
+    updateBuffDisplay();
+    if (Date.now() >= clickBuffEnd) {
+      clearInterval(clickBuffTicker);
+      clickBuffTicker = null;
+      document.getElementById('click-buff').classList.remove('active');
+      calcClickPower();
+      renderStats();
+    }
+  }, 250);
+
+  calcClickPower();
+  renderStats();
+}
+
+function updateBuffDisplay() {
+  const remaining = Math.max(0, Math.ceil((clickBuffEnd - Date.now()) / 1000));
+  const el = document.getElementById('click-buff');
+  if (remaining > 0) {
+    el.classList.add('active');
+    document.getElementById('buff-timer').textContent = remaining;
+  } else {
+    el.classList.remove('active');
+  }
+}
+
+// Spawn a falling fish every 45–90 seconds
+function scheduleFallingFish() {
+  const delay = (45 + Math.random() * 45) * 1000;
+  fallingFishTimer = setTimeout(() => {
+    spawnFallingFish();
+    scheduleFallingFish();
+  }, delay);
+}
+scheduleFallingFish();
 
 // ── Achievement logic ──────────────────────────────────────────────────────
 function unlockAchievement(a) {

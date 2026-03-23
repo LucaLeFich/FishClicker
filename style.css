@@ -994,6 +994,39 @@ body {
 #fish-btn.skin-fx-ocean,   .skin-icon.skin-fx-ocean   { animation: skinOcean   2s   ease-in-out infinite; }
 #fish-btn.skin-fx-rainbow, .skin-icon.skin-fx-rainbow { animation: skinRainbow 2.5s linear     infinite; }
 
+/* ── Falling Fish ── */
+@keyframes fishFall {
+  from { top: -60px; }
+  to   { top: 110vh;  }
+}
+@keyframes fishWobble {
+  0%, 100% { transform: rotate(-12deg) scaleX(1);   }
+  50%       { transform: rotate( 12deg) scaleX(-1);  }
+}
+#falling-fish {
+  position: fixed;
+  font-size: 2.4rem;
+  cursor: pointer;
+  z-index: 300;
+  user-select: none;
+  animation: fishFall var(--fall-dur, 7s) linear forwards,
+             fishWobble 0.9s ease-in-out infinite;
+  filter: drop-shadow(0 0 8px #5dd8ff);
+  transition: filter 0.1s;
+}
+#falling-fish:hover { filter: drop-shadow(0 0 18px #fff) drop-shadow(0 0 8px #5dd8ff); }
+
+/* ── Click Buff indicator ── */
+#click-buff {
+  display: none;
+  margin-top: 6px;
+  font-size: 0.8rem;
+  color: #5dd8ff;
+  font-weight: bold;
+  text-shadow: 0 0 8px #3ab0e0;
+}
+#click-buff.active { display: block; }
+
 /* ── Skin Shop ── */
 #shop-overlay {
   position: fixed;
