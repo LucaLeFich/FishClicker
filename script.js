@@ -8,6 +8,12 @@ const state = {
   clickCount: 0,
   lastClickTime: Date.now(),
   rockyCount: 0,
+  // Blackjack stats
+  bjHands: 0, bjWins: 0, bjLosses: 0, bjPushes: 0, bjBlackjacks: 0,
+  bjWagered: 0, bjWon: 0, bjBiggestWin: 0, bjBestStreak: 0,
+  // Roulette stats
+  rlSpins: 0, rlWins: 0, rlLosses: 0,
+  rlWagered: 0, rlWon: 0, rlBiggestWin: 0, rlBestStreak: 0,
 };
 
 // ── Buildings ──────────────────────────────────────────────────────────────
@@ -333,6 +339,53 @@ function calcClickPower() {
   state.clickPower = Math.floor(cp);
 }
 
+// ── Gambling Stats ──────────────────────────────────────────────────────────
+function renderGambleStats() {
+  const el = document.getElementById('gstats-content');
+  if (!el) return;
+  const bjNet = state.bjWon - state.bjWagered;
+  const rlNet = state.rlWon - state.rlWagered;
+  const bjWinPct = state.bjHands > 0 ? ((state.bjWins / state.bjHands) * 100).toFixed(1) : '—';
+  const rlWinPct = state.rlSpins > 0 ? ((state.rlWins / state.rlSpins) * 100).toFixed(1) : '—';
+  const sign = n => n >= 0 ? `+${fmt(n)}` : `−${fmt(Math.abs(n))}`;
+  el.innerHTML = `
+    <div class="gstats-section">
+      <div class="gstats-title">🃏 Blackjack</div>
+      <div class="gstats-grid">
+        <div class="gstat"><span class="gstat-label">Hands Played</span><span class="gstat-val">${state.bjHands}</span></div>
+        <div class="gstat"><span class="gstat-label">Wins</span><span class="gstat-val gstat-win">${state.bjWins}</span></div>
+        <div class="gstat"><span class="gstat-label">Losses</span><span class="gstat-val gstat-lose">${state.bjLosses}</span></div>
+        <div class="gstat"><span class="gstat-label">Pushes</span><span class="gstat-val">${state.bjPushes}</span></div>
+        <div class="gstat"><span class="gstat-label">Blackjacks</span><span class="gstat-val gstat-win">${state.bjBlackjacks}</span></div>
+        <div class="gstat"><span class="gstat-label">Win Rate</span><span class="gstat-val">${bjWinPct}${state.bjHands > 0 ? '%' : ''}</span></div>
+        <div class="gstat"><span class="gstat-label">Total Wagered</span><span class="gstat-val">🐟 ${fmt(state.bjWagered)}</span></div>
+        <div class="gstat"><span class="gstat-label">Net P/L</span><span class="gstat-val ${bjNet >= 0 ? 'gstat-win' : 'gstat-lose'}">🐟 ${sign(bjNet)}</span></div>
+        <div class="gstat"><span class="gstat-label">Biggest Win</span><span class="gstat-val gstat-win">🐟 ${fmt(state.bjBiggestWin)}</span></div>
+        <div class="gstat"><span class="gstat-label">Best Streak</span><span class="gstat-val">${state.bjBestStreak}</span></div>
+      </div>
+    </div>
+    <div class="gstats-section">
+      <div class="gstats-title">🎡 Roulette</div>
+      <div class="gstats-grid">
+        <div class="gstat"><span class="gstat-label">Spins</span><span class="gstat-val">${state.rlSpins}</span></div>
+        <div class="gstat"><span class="gstat-label">Wins</span><span class="gstat-val gstat-win">${state.rlWins}</span></div>
+        <div class="gstat"><span class="gstat-label">Losses</span><span class="gstat-val gstat-lose">${state.rlLosses}</span></div>
+        <div class="gstat"><span class="gstat-label">Win Rate</span><span class="gstat-val">${rlWinPct}${state.rlSpins > 0 ? '%' : ''}</span></div>
+        <div class="gstat"><span class="gstat-label">Total Wagered</span><span class="gstat-val">🐟 ${fmt(state.rlWagered)}</span></div>
+        <div class="gstat"><span class="gstat-label">Net P/L</span><span class="gstat-val ${rlNet >= 0 ? 'gstat-win' : 'gstat-lose'}">🐟 ${sign(rlNet)}</span></div>
+        <div class="gstat"><span class="gstat-label">Biggest Win</span><span class="gstat-val gstat-win">🐟 ${fmt(state.rlBiggestWin)}</span></div>
+        <div class="gstat"><span class="gstat-label">Best Streak</span><span class="gstat-val">${state.rlBestStreak}</span></div>
+      </div>
+    </div>
+    <div class="gstats-section">
+      <div class="gstats-title">📊 Combined</div>
+      <div class="gstats-grid">
+        <div class="gstat"><span class="gstat-label">Total Wagered</span><span class="gstat-val">🐟 ${fmt(state.bjWagered + state.rlWagered)}</span></div>
+        <div class="gstat"><span class="gstat-label">Net P/L</span><span class="gstat-val ${(bjNet+rlNet) >= 0 ? 'gstat-win' : 'gstat-lose'}">🐟 ${sign(bjNet + rlNet)}</span></div>
+      </div>
+    </div>`;
+}
+
 // ── Render ─────────────────────────────────────────────────────────────────
 function renderStats() {
   document.getElementById('fish-count').textContent = fmt(state.fish) + ' fish';
@@ -341,6 +394,30 @@ function renderStats() {
   document.getElementById('stat-total').textContent = fmt(state.fish);
   document.getElementById('stat-alltime').textContent = 'all time: ' + fmt(state.allTimeFish);
   document.getElementById('click-val').textContent = fmt(state.clickPower);
+}
+
+const MAX_BG_ICONS = 50;
+
+// Simple seeded RNG (mulberry32) so icon positions are stable per building
+function makeRng(seed) {
+  let s = seed >>> 0;
+  return () => { s += 0x6D2B79F5; let t = Math.imul(s ^ s >>> 15, 1 | s); t ^= t + Math.imul(t ^ t >>> 7, 61 | t); return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+}
+
+function buildIconsBgHtml(b) {
+  const n = Math.min(b.count, MAX_BG_ICONS);
+  // Use a seed derived from the building id so positions are consistent
+  const seed = b.id.split('').reduce((acc, c) => acc * 31 + c.charCodeAt(0), 0);
+  const rng = makeRng(seed);
+  let html = '';
+  for (let i = 0; i < n; i++) {
+    const left  = (rng() * 100).toFixed(1);        // clamped by CSS
+    const top   = (rng() * 100).toFixed(1);        // clamped by CSS
+    const rot   = (rng() * 30 - 15).toFixed(1);   // -15..15 deg
+    const scale = (0.9 + rng() * 0.2).toFixed(2); // 0.9..1.1×
+    html += `<span style="--bx:${left}%;--by:${top}%;transform:rotate(${rot}deg) scale(${scale})">${b.icon}</span>`;
+  }
+  return html;
 }
 
 function renderBuildings() {
@@ -356,6 +433,7 @@ function renderBuildings() {
     const label = qty > 1 ? `×${qty} ` : '';
     const buyQtyHtml = qty > 1 ? `<span class="b-buy-qty">+${qty}</span>` : '';
     row.innerHTML = `
+      <div class="b-icons-bg">${buildIconsBgHtml(b)}</div>
       <div class="b-icon">${b.icon}</div>
       <div class="b-info">
         <div class="b-name">${b.name}</div>
@@ -390,6 +468,11 @@ function updateBuildingAffordability() {
       } else if (buyQtyEl) {
         buyQtyEl.remove();
       }
+    }
+    const iconsEl = row.querySelector('.b-icons-bg');
+    if (iconsEl) {
+      const desired = Math.min(b.count, MAX_BG_ICONS);
+      if (iconsEl.childElementCount !== desired) iconsEl.innerHTML = buildIconsBgHtml(b);
     }
   });
 }
@@ -850,6 +933,20 @@ function bjFinishSplit(dealerScore) {
   const totalBet = BJ.bet + BJ.splitBet;
   bjMsg(msgs.join(' | '), totalPayout > totalBet ? 'win' : totalPayout === 0 ? 'lose' : '');
   if (totalPayout >= 1000000) triggerAchievement('a_g6');
+  // Gambling stats for split
+  state.bjHands += 2;
+  state.bjWagered += totalBet;
+  state.bjWon += totalPayout;
+  [[BJ.playerHand], [BJ.splitHand]].forEach(([hand]) => {
+    const s = bjScore(hand);
+    if (s > 21) state.bjLosses++;
+    else if (dealerScore > 21 || s > dealerScore) state.bjWins++;
+    else if (s === dealerScore) state.bjPushes++;
+    else state.bjLosses++;
+  });
+  const splitNet = totalPayout - totalBet;
+  if (splitNet > state.bjBiggestWin) state.bjBiggestWin = splitNet;
+  if (BJ.consecutiveWins > state.bjBestStreak) state.bjBestStreak = BJ.consecutiveWins;
   BJ.splitHand = [];
   BJ.splitBet = 0;
   BJ.activeHand = 0;
@@ -895,6 +992,17 @@ function bjFinish(result) {
     BJ.consecutiveWins = 0;
   }
   if (result === 'bust') triggerAchievement('a_g4');
+  // Gambling stats
+  state.bjHands++;
+  state.bjWagered += BJ.bet;
+  state.bjWon += payout;
+  if (result === 'blackjack') { state.bjWins++; state.bjBlackjacks++; }
+  else if (result === 'win')  { state.bjWins++; }
+  else if (result === 'push') { state.bjPushes++; }
+  else                        { state.bjLosses++; }
+  const bjNet = payout - BJ.bet;
+  if (bjNet > state.bjBiggestWin) state.bjBiggestWin = bjNet;
+  if (BJ.consecutiveWins > state.bjBestStreak) state.bjBestStreak = BJ.consecutiveWins;
   BJ.allInBet = false;
   // Restore bet to pre-double amount
   BJ.bet = BJ.originalBet;
@@ -1117,6 +1225,18 @@ async function rlSpin() {
   }
   if (result === 0 && payout > 0)  triggerAchievement('a_r1');
   if (result === 0 && payout === 0) triggerAchievement('a_r3');
+  // Gambling stats
+  state.rlSpins++;
+  state.rlWagered += RL.bet;
+  state.rlWon += payout;
+  if (payout > 0) {
+    state.rlWins++;
+    const rlNet = payout - RL.bet;
+    if (rlNet > state.rlBiggestWin) state.rlBiggestWin = rlNet;
+    if (RL.consecutiveWins > state.rlBestStreak) state.rlBestStreak = RL.consecutiveWins;
+  } else {
+    state.rlLosses++;
+  }
 
   RL.currentRotation = totalRot;
   wheelEl.style.transition = '';
@@ -1179,6 +1299,22 @@ function loadGame() {
       const a = getAchievement(aid);
       if (a) a.unlocked = true;
     });
+    state.bjHands      = data.bjHands      || 0;
+    state.bjWins       = data.bjWins       || 0;
+    state.bjLosses     = data.bjLosses     || 0;
+    state.bjPushes     = data.bjPushes     || 0;
+    state.bjBlackjacks = data.bjBlackjacks || 0;
+    state.bjWagered    = data.bjWagered    || 0;
+    state.bjWon        = data.bjWon        || 0;
+    state.bjBiggestWin = data.bjBiggestWin || 0;
+    state.bjBestStreak = data.bjBestStreak || 0;
+    state.rlSpins      = data.rlSpins      || 0;
+    state.rlWins       = data.rlWins       || 0;
+    state.rlLosses     = data.rlLosses     || 0;
+    state.rlWagered    = data.rlWagered    || 0;
+    state.rlWon        = data.rlWon        || 0;
+    state.rlBiggestWin = data.rlBiggestWin || 0;
+    state.rlBestStreak = data.rlBestStreak || 0;
     if (data.rockyCount) {
       state.rockyCount = data.rockyCount;
       const display = document.getElementById('rocky-display');
@@ -1200,6 +1336,13 @@ function getSaveData() {
     upgrades: UPGRADES.filter(u => u.bought).map(u => u.id),
     achievements: ACHIEVEMENTS.filter(a => a.unlocked).map(a => a.id),
     rockyCount: state.rockyCount,
+    bjHands: state.bjHands, bjWins: state.bjWins, bjLosses: state.bjLosses,
+    bjPushes: state.bjPushes, bjBlackjacks: state.bjBlackjacks,
+    bjWagered: state.bjWagered, bjWon: state.bjWon,
+    bjBiggestWin: state.bjBiggestWin, bjBestStreak: state.bjBestStreak,
+    rlSpins: state.rlSpins, rlWins: state.rlWins, rlLosses: state.rlLosses,
+    rlWagered: state.rlWagered, rlWon: state.rlWon,
+    rlBiggestWin: state.rlBiggestWin, rlBestStreak: state.rlBestStreak,
   };
 }
 
@@ -1313,6 +1456,7 @@ function initListeners() {
     if (!tab) return;
     document.querySelectorAll('.gamble-tab').forEach(t => t.classList.toggle('active', t === tab));
     document.querySelectorAll('.gamble-game').forEach(g => g.classList.toggle('hidden', g.id !== tab.dataset.tab));
+    if (tab.dataset.tab === 'gamble-stats') renderGambleStats();
   });
 
   // Blackjack bet buttons

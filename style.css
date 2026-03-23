@@ -353,6 +353,7 @@ body {
 .building-row {
   display: flex;
   align-items: center;
+  position: relative;
   background: rgba(10,50,90,0.6);
   border: 1px solid #1a5070;
   border-radius: 8px;
@@ -362,7 +363,27 @@ body {
   transition: background 0.2s, border-color 0.2s;
   -webkit-user-select: none;
   user-select: none;
+  overflow: hidden;
 }
+.b-icons-bg {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+.b-icons-bg span {
+  position: absolute;
+  font-size: 1.7rem;
+  line-height: 1;
+  left: clamp(2px, var(--bx), calc(100% - 1.9rem));
+  top: clamp(2px, var(--by), calc(100% - 1.9rem));
+  opacity: 0.18;
+  user-select: none;
+}
+.building-row .b-icon,
+.building-row .b-info,
+.building-row .b-count-wrap { position: relative; z-index: 1; }
 .building-row:hover:not(.locked) { background: rgba(20,80,130,0.75); border-color: #3a8ac0; }
 .building-row.locked { opacity: 0.35; cursor: not-allowed; }
 .building-row .b-icon { font-size: 1.8rem; margin-right: 12px; flex-shrink: 0; }
@@ -773,6 +794,40 @@ body {
 }
 .gamble-tab:hover { color: #cc88ff; }
 .gamble-tab.active { color: #fff; border-bottom-color: #cc88ff; }
+
+/* ── Gambling Stats ── */
+#gamble-stats {
+  padding: 16px 24px;
+  overflow-y: auto;
+  max-height: 480px;
+}
+.gstats-section { margin-bottom: 18px; }
+.gstats-title {
+  font-size: 1rem;
+  font-weight: bold;
+  color: #5dd8ff;
+  border-bottom: 1px solid #1a5070;
+  padding-bottom: 4px;
+  margin-bottom: 10px;
+}
+.gstats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px 12px;
+}
+.gstat {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(10,40,70,0.5);
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 0.82rem;
+}
+.gstat-label { color: #7ab8d8; }
+.gstat-val   { font-weight: bold; color: #c0e8ff; }
+.gstat-win   { color: #60e060; }
+.gstat-lose  { color: #e06060; }
 
 /* ── Roulette section ── */
 #roulette {
