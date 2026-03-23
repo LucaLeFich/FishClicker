@@ -543,13 +543,13 @@ function buyUpgrade(u) {
 
 // ── Click handler ──────────────────────────────────────────────────────────
 const fishBtn = document.getElementById('fish-btn');
-fishBtn.addEventListener('click', (e) => {
+fishBtn.addEventListener('click', () => {
   state.fish += state.clickPower;
   state.allTimeFish += state.clickPower;
   state.clickCount++;
   state.lastClickTime = Date.now();
   recordClick();
-  if (Math.random() < 1e-6) discoverRocky();
+  if (Math.random() < 2e-5) discoverRocky();
   // Speed Demon: 10 clicks within 1 second
   if (clickTimestamps.length >= 10) {
     const span = clickTimestamps[clickTimestamps.length - 1] - clickTimestamps[clickTimestamps.length - 10];
