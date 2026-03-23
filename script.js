@@ -12,85 +12,85 @@ const state = {
 
 // ── Buildings ──────────────────────────────────────────────────────────────
 const BUILDINGS = [
-  { id: 'rod',       name: 'Fishing Rod',      icon: '🎣', baseCost: 15,          baseFps: 0.1,      desc: 'A humble rod. Every fisherman starts somewhere.',                         count: 0 },
-  { id: 'net',       name: 'Fishing Net',      icon: '🥅', baseCost: 100,         baseFps: 0.5,      desc: 'Cast wide, catch more. Simple math.',                                     count: 0 },
-  { id: 'boat',      name: 'Rowboat',          icon: '🚣', baseCost: 500,         baseFps: 2,        desc: 'Row, row, row your boat — full of fish.',                                 count: 0 },
-  { id: 'dock',      name: 'Fish Dock',        icon: '🏚️', baseCost: 2000,        baseFps: 8,        desc: 'A proper dock with hired fishers working shifts.',                        count: 0 },
-  { id: 'farm',      name: 'Fish Farm',        icon: '🐠', baseCost: 10000,       baseFps: 25,       desc: 'Sustainably farmed salmon. Mostly sustainably.',                          count: 0 },
-  { id: 'trawler',   name: 'Trawler',          icon: '🛥️', baseCost: 50000,       baseFps: 100,      desc: 'Industrial trawling. The ocean trembles.',                                count: 0 },
-  { id: 'submarine', name: 'Submarine',        icon: '🤿', baseCost: 250000,      baseFps: 400,      desc: 'Hunting the deep. Sonar pings fill the abyss.',                           count: 0 },
-  { id: 'portal',    name: 'Fish Portal',      icon: '🌀', baseCost: 1500000,     baseFps: 1500,     desc: 'A rift to a dimension made entirely of fish.',                            count: 0 },
-  { id: 'deity',     name: 'Ocean Deity',      icon: '🐙', baseCost: 10000000,    baseFps: 6000,     desc: 'An ancient leviathan, now in your employment.',                           count: 0 },
-  { id: 'kraken',    name: 'Kraken',           icon: '🦑', baseCost: 75000000,    baseFps: 28000,    desc: 'It was never a myth. It just needed a manager.',                          count: 0 },
-  { id: 'fishdim',   name: 'Fish Dimension',   icon: '🔭', baseCost: 400000000,   baseFps: 120000,   desc: 'A parallel universe colonised entirely by fish. Rent is surprisingly cheap.', count: 0 },
-  { id: 'timepond',  name: 'Time Pond',        icon: '⏳', baseCost: 2500000000,  baseFps: 500000,   desc: 'Fish from the past, present, and future arrive simultaneously. Scheduling nightmare.', count: 0 },
-  { id: 'fishstar',  name: 'Fish Star',        icon: '⭐', baseCost: 16000000000, baseFps: 2200000,  desc: 'A star made of compressed fish. Warm. Smells indescribable.',             count: 0 },
+  { id: 'rod',       name: 'Fishing Rod',      icon: '🎣', baseCost: 25,           baseFps: 0.1,      desc: 'A humble rod. Every fisherman starts somewhere.',                         count: 0 },
+  { id: 'net',       name: 'Fishing Net',      icon: '🥅', baseCost: 200,          baseFps: 0.4,      desc: 'Cast wide, catch more. Simple math.',                                     count: 0 },
+  { id: 'boat',      name: 'Rowboat',          icon: '🚣', baseCost: 1000,         baseFps: 1.5,      desc: 'Row, row, row your boat — full of fish.',                                 count: 0 },
+  { id: 'dock',      name: 'Fish Dock',        icon: '🏚️', baseCost: 5000,         baseFps: 6,        desc: 'A proper dock with hired fishers working shifts.',                        count: 0 },
+  { id: 'farm',      name: 'Fish Farm',        icon: '🐠', baseCost: 25000,        baseFps: 20,       desc: 'Sustainably farmed salmon. Mostly sustainably.',                          count: 0 },
+  { id: 'trawler',   name: 'Trawler',          icon: '🛥️', baseCost: 150000,       baseFps: 75,       desc: 'Industrial trawling. The ocean trembles.',                                count: 0 },
+  { id: 'submarine', name: 'Submarine',        icon: '🤿', baseCost: 750000,       baseFps: 300,      desc: 'Hunting the deep. Sonar pings fill the abyss.',                           count: 0 },
+  { id: 'portal',    name: 'Fish Portal',      icon: '🌀', baseCost: 5000000,      baseFps: 1200,     desc: 'A rift to a dimension made entirely of fish.',                            count: 0 },
+  { id: 'deity',     name: 'Ocean Deity',      icon: '🐙', baseCost: 40000000,     baseFps: 4500,     desc: 'An ancient leviathan, now in your employment.',                           count: 0 },
+  { id: 'kraken',    name: 'Kraken',           icon: '🦑', baseCost: 300000000,    baseFps: 20000,    desc: 'It was never a myth. It just needed a manager.',                          count: 0 },
+  { id: 'fishdim',   name: 'Fish Dimension',   icon: '🔭', baseCost: 2000000000,   baseFps: 90000,    desc: 'A parallel universe colonised entirely by fish. Rent is surprisingly cheap.', count: 0 },
+  { id: 'timepond',  name: 'Time Pond',        icon: '⏳', baseCost: 15000000000,  baseFps: 375000,   desc: 'Fish from the past, present, and future arrive simultaneously. Scheduling nightmare.', count: 0 },
+  { id: 'fishstar',  name: 'Fish Star',        icon: '⭐', baseCost: 100000000000, baseFps: 1600000,  desc: 'A star made of compressed fish. Warm. Smells indescribable.',             count: 0 },
 ];
 
 // ── Upgrades ───────────────────────────────────────────────────────────────
 const UPGRADES = [
   // ── Click upgrades ──
-  { id: 'u_click1',  name: 'Better Hook',           cost: 50,          desc: '2× click power.',                        bought: false, type: 'click', mult: 2,   req: () => state.allTimeFish >= 10 },
-  { id: 'u_click2',  name: 'Titanium Hook',          cost: 500,         desc: '2× click power.',                        bought: false, type: 'click', mult: 2,   req: () => state.allTimeFish >= 200 },
-  { id: 'u_click3',  name: 'Enchanted Lure',         cost: 5000,        desc: '5× click power.',                        bought: false, type: 'click', mult: 5,   req: () => state.allTimeFish >= 2000 },
-  { id: 'u_click4',  name: 'Quantum Bait',           cost: 100000,      desc: '10× click power.',                       bought: false, type: 'click', mult: 10,  req: () => state.allTimeFish >= 50000 },
-  { id: 'u_click5',  name: "Poseidon's Rod",         cost: 2000000,     desc: '10× click power.',                       bought: false, type: 'click', mult: 10,  req: () => state.allTimeFish >= 500000 },
-  { id: 'u_click6',  name: 'Cosmic Bait',            cost: 50000000,    desc: '20× click power.',                       bought: false, type: 'click', mult: 20,  req: () => state.allTimeFish >= 10000000 },
+  { id: 'u_click1',  name: 'Better Hook',           cost: 250,         desc: '2× click power.',                        bought: false, type: 'click', mult: 2,   req: () => state.allTimeFish >= 50 },
+  { id: 'u_click2',  name: 'Titanium Hook',          cost: 3000,        desc: '2× click power.',                        bought: false, type: 'click', mult: 2,   req: () => state.allTimeFish >= 500 },
+  { id: 'u_click3',  name: 'Enchanted Lure',         cost: 30000,       desc: '5× click power.',                        bought: false, type: 'click', mult: 5,   req: () => state.allTimeFish >= 8000 },
+  { id: 'u_click4',  name: 'Quantum Bait',           cost: 600000,      desc: '10× click power.',                       bought: false, type: 'click', mult: 10,  req: () => state.allTimeFish >= 200000 },
+  { id: 'u_click5',  name: "Poseidon's Rod",         cost: 15000000,    desc: '10× click power.',                       bought: false, type: 'click', mult: 10,  req: () => state.allTimeFish >= 2000000 },
+  { id: 'u_click6',  name: 'Cosmic Bait',            cost: 400000000,   desc: '20× click power.',                       bought: false, type: 'click', mult: 20,  req: () => state.allTimeFish >= 50000000 },
   // ── Rod upgrades ──
-  { id: 'u_rod1',    name: 'Carbon Fibre Rod',       cost: 200,         desc: 'Fishing Rods produce 2× more.',          bought: false, type: 'building', target: 'rod',       mult: 2, req: () => getBldg('rod').count >= 5 },
-  { id: 'u_rod2',    name: 'Telescopic Rod',         cost: 2000,        desc: 'Fishing Rods produce 2× more.',          bought: false, type: 'building', target: 'rod',       mult: 2, req: () => getBldg('rod').count >= 15 },
-  { id: 'u_rod3',    name: 'Nano-fibre Rod',         cost: 15000,       desc: 'Fishing Rods produce 2× more.',          bought: false, type: 'building', target: 'rod',       mult: 2, req: () => getBldg('rod').count >= 25 },
+  { id: 'u_rod1',    name: 'Carbon Fibre Rod',       cost: 600,         desc: 'Fishing Rods produce 2× more.',          bought: false, type: 'building', target: 'rod',       mult: 2, req: () => getBldg('rod').count >= 5 },
+  { id: 'u_rod2',    name: 'Telescopic Rod',         cost: 6000,        desc: 'Fishing Rods produce 2× more.',          bought: false, type: 'building', target: 'rod',       mult: 2, req: () => getBldg('rod').count >= 15 },
+  { id: 'u_rod3',    name: 'Nano-fibre Rod',         cost: 50000,       desc: 'Fishing Rods produce 2× more.',          bought: false, type: 'building', target: 'rod',       mult: 2, req: () => getBldg('rod').count >= 25 },
   // ── Net upgrades ──
-  { id: 'u_net1',    name: 'Silk Net',               cost: 1000,        desc: 'Fishing Nets produce 2× more.',          bought: false, type: 'building', target: 'net',       mult: 2, req: () => getBldg('net').count >= 5 },
-  { id: 'u_net2',    name: 'Electrified Net',        cost: 10000,       desc: 'Fishing Nets produce 2× more.',          bought: false, type: 'building', target: 'net',       mult: 2, req: () => getBldg('net').count >= 15 },
-  { id: 'u_net3',    name: 'Quantum Mesh',           cost: 75000,       desc: 'Fishing Nets produce 2× more.',          bought: false, type: 'building', target: 'net',       mult: 2, req: () => getBldg('net').count >= 25 },
+  { id: 'u_net1',    name: 'Silk Net',               cost: 3000,        desc: 'Fishing Nets produce 2× more.',          bought: false, type: 'building', target: 'net',       mult: 2, req: () => getBldg('net').count >= 5 },
+  { id: 'u_net2',    name: 'Electrified Net',        cost: 35000,       desc: 'Fishing Nets produce 2× more.',          bought: false, type: 'building', target: 'net',       mult: 2, req: () => getBldg('net').count >= 15 },
+  { id: 'u_net3',    name: 'Quantum Mesh',           cost: 250000,      desc: 'Fishing Nets produce 2× more.',          bought: false, type: 'building', target: 'net',       mult: 2, req: () => getBldg('net').count >= 25 },
   // ── Boat upgrades ──
-  { id: 'u_boat1',   name: 'Outboard Motor',         cost: 5000,        desc: 'Rowboats produce 2× more.',              bought: false, type: 'building', target: 'boat',      mult: 2, req: () => getBldg('boat').count >= 5 },
-  { id: 'u_boat2',   name: 'Autopilot',              cost: 50000,       desc: 'Rowboats produce 2× more.',              bought: false, type: 'building', target: 'boat',      mult: 2, req: () => getBldg('boat').count >= 15 },
-  { id: 'u_boat3',   name: 'Turbo Propeller',        cost: 300000,      desc: 'Rowboats produce 2× more.',              bought: false, type: 'building', target: 'boat',      mult: 2, req: () => getBldg('boat').count >= 25 },
+  { id: 'u_boat1',   name: 'Outboard Motor',         cost: 15000,       desc: 'Rowboats produce 2× more.',              bought: false, type: 'building', target: 'boat',      mult: 2, req: () => getBldg('boat').count >= 5 },
+  { id: 'u_boat2',   name: 'Autopilot',              cost: 150000,      desc: 'Rowboats produce 2× more.',              bought: false, type: 'building', target: 'boat',      mult: 2, req: () => getBldg('boat').count >= 15 },
+  { id: 'u_boat3',   name: 'Turbo Propeller',        cost: 1000000,     desc: 'Rowboats produce 2× more.',              bought: false, type: 'building', target: 'boat',      mult: 2, req: () => getBldg('boat').count >= 25 },
   // ── Dock upgrades ──
-  { id: 'u_dock1',   name: 'Union Workers',          cost: 25000,       desc: 'Fish Docks produce 2× more.',            bought: false, type: 'building', target: 'dock',      mult: 2, req: () => getBldg('dock').count >= 5 },
-  { id: 'u_dock2',   name: 'Crane System',           cost: 200000,      desc: 'Fish Docks produce 2× more.',            bought: false, type: 'building', target: 'dock',      mult: 2, req: () => getBldg('dock').count >= 15 },
-  { id: 'u_dock3',   name: 'Automated Conveyor',     cost: 1500000,     desc: 'Fish Docks produce 2× more.',            bought: false, type: 'building', target: 'dock',      mult: 2, req: () => getBldg('dock').count >= 25 },
+  { id: 'u_dock1',   name: 'Union Workers',          cost: 75000,       desc: 'Fish Docks produce 2× more.',            bought: false, type: 'building', target: 'dock',      mult: 2, req: () => getBldg('dock').count >= 5 },
+  { id: 'u_dock2',   name: 'Crane System',           cost: 650000,      desc: 'Fish Docks produce 2× more.',            bought: false, type: 'building', target: 'dock',      mult: 2, req: () => getBldg('dock').count >= 15 },
+  { id: 'u_dock3',   name: 'Automated Conveyor',     cost: 5000000,     desc: 'Fish Docks produce 2× more.',            bought: false, type: 'building', target: 'dock',      mult: 2, req: () => getBldg('dock').count >= 25 },
   // ── Farm upgrades ──
-  { id: 'u_farm1',   name: 'Premium Feed',           cost: 100000,      desc: 'Fish Farms produce 2× more.',            bought: false, type: 'building', target: 'farm',      mult: 2, req: () => getBldg('farm').count >= 5 },
-  { id: 'u_farm2',   name: 'Genetic Optimisation',   cost: 800000,      desc: 'Fish Farms produce 2× more.',            bought: false, type: 'building', target: 'farm',      mult: 2, req: () => getBldg('farm').count >= 15 },
-  { id: 'u_farm3',   name: 'Hatchery Drones',        cost: 5000000,     desc: 'Fish Farms produce 2× more.',            bought: false, type: 'building', target: 'farm',      mult: 2, req: () => getBldg('farm').count >= 25 },
+  { id: 'u_farm1',   name: 'Premium Feed',           cost: 300000,      desc: 'Fish Farms produce 2× more.',            bought: false, type: 'building', target: 'farm',      mult: 2, req: () => getBldg('farm').count >= 5 },
+  { id: 'u_farm2',   name: 'Genetic Optimisation',   cost: 2500000,     desc: 'Fish Farms produce 2× more.',            bought: false, type: 'building', target: 'farm',      mult: 2, req: () => getBldg('farm').count >= 15 },
+  { id: 'u_farm3',   name: 'Hatchery Drones',        cost: 18000000,    desc: 'Fish Farms produce 2× more.',            bought: false, type: 'building', target: 'farm',      mult: 2, req: () => getBldg('farm').count >= 25 },
   // ── Trawler upgrades ──
-  { id: 'u_trawl1',  name: 'Sonar Array',            cost: 500000,      desc: 'Trawlers produce 2× more.',              bought: false, type: 'building', target: 'trawler',   mult: 2, req: () => getBldg('trawler').count >= 5 },
-  { id: 'u_trawl2',  name: 'Deep-sea Radar',         cost: 3000000,     desc: 'Trawlers produce 2× more.',              bought: false, type: 'building', target: 'trawler',   mult: 2, req: () => getBldg('trawler').count >= 15 },
-  { id: 'u_trawl3',  name: 'Meganet Deployment',     cost: 20000000,    desc: 'Trawlers produce 2× more.',              bought: false, type: 'building', target: 'trawler',   mult: 2, req: () => getBldg('trawler').count >= 25 },
+  { id: 'u_trawl1',  name: 'Sonar Array',            cost: 1500000,     desc: 'Trawlers produce 2× more.',              bought: false, type: 'building', target: 'trawler',   mult: 2, req: () => getBldg('trawler').count >= 5 },
+  { id: 'u_trawl2',  name: 'Deep-sea Radar',         cost: 10000000,    desc: 'Trawlers produce 2× more.',              bought: false, type: 'building', target: 'trawler',   mult: 2, req: () => getBldg('trawler').count >= 15 },
+  { id: 'u_trawl3',  name: 'Meganet Deployment',     cost: 70000000,    desc: 'Trawlers produce 2× more.',              bought: false, type: 'building', target: 'trawler',   mult: 2, req: () => getBldg('trawler').count >= 25 },
   // ── Submarine upgrades ──
-  { id: 'u_sub1',    name: 'Torpedo Nets',           cost: 3000000,     desc: 'Submarines produce 2× more.',            bought: false, type: 'building', target: 'submarine', mult: 2, req: () => getBldg('submarine').count >= 5 },
-  { id: 'u_sub2',    name: 'Pressure Harvester',     cost: 20000000,    desc: 'Submarines produce 2× more.',            bought: false, type: 'building', target: 'submarine', mult: 2, req: () => getBldg('submarine').count >= 15 },
-  { id: 'u_sub3',    name: 'Nuclear Fish Drive',     cost: 150000000,   desc: 'Submarines produce 2× more.',            bought: false, type: 'building', target: 'submarine', mult: 2, req: () => getBldg('submarine').count >= 25 },
+  { id: 'u_sub1',    name: 'Torpedo Nets',           cost: 10000000,    desc: 'Submarines produce 2× more.',            bought: false, type: 'building', target: 'submarine', mult: 2, req: () => getBldg('submarine').count >= 5 },
+  { id: 'u_sub2',    name: 'Pressure Harvester',     cost: 70000000,    desc: 'Submarines produce 2× more.',            bought: false, type: 'building', target: 'submarine', mult: 2, req: () => getBldg('submarine').count >= 15 },
+  { id: 'u_sub3',    name: 'Nuclear Fish Drive',     cost: 500000000,   desc: 'Submarines produce 2× more.',            bought: false, type: 'building', target: 'submarine', mult: 2, req: () => getBldg('submarine').count >= 25 },
   // ── Portal upgrades ──
-  { id: 'u_portal1', name: 'Rift Stabiliser',        cost: 15000000,    desc: 'Fish Portals produce 2× more.',          bought: false, type: 'building', target: 'portal',    mult: 2, req: () => getBldg('portal').count >= 5 },
-  { id: 'u_portal2', name: 'Dimensional Antenna',    cost: 100000000,   desc: 'Fish Portals produce 2× more.',          bought: false, type: 'building', target: 'portal',    mult: 2, req: () => getBldg('portal').count >= 15 },
-  { id: 'u_portal3', name: 'Multiverse Fishing Permit', cost: 750000000, desc: 'Fish Portals produce 2× more.',         bought: false, type: 'building', target: 'portal',    mult: 2, req: () => getBldg('portal').count >= 25 },
+  { id: 'u_portal1', name: 'Rift Stabiliser',        cost: 60000000,    desc: 'Fish Portals produce 2× more.',          bought: false, type: 'building', target: 'portal',    mult: 2, req: () => getBldg('portal').count >= 5 },
+  { id: 'u_portal2', name: 'Dimensional Antenna',    cost: 400000000,   desc: 'Fish Portals produce 2× more.',          bought: false, type: 'building', target: 'portal',    mult: 2, req: () => getBldg('portal').count >= 15 },
+  { id: 'u_portal3', name: 'Multiverse Fishing Permit', cost: 3000000000, desc: 'Fish Portals produce 2× more.',        bought: false, type: 'building', target: 'portal',    mult: 2, req: () => getBldg('portal').count >= 25 },
   // ── Deity upgrades ──
-  { id: 'u_deity1',  name: 'Divine Offering',        cost: 100000000,   desc: 'Ocean Deities produce 2× more.',         bought: false, type: 'building', target: 'deity',     mult: 2, req: () => getBldg('deity').count >= 5 },
-  { id: 'u_deity2',  name: 'Eldritch Contract',      cost: 750000000,   desc: 'Ocean Deities produce 2× more.',         bought: false, type: 'building', target: 'deity',     mult: 2, req: () => getBldg('deity').count >= 15 },
-  { id: 'u_deity3',  name: 'Abyssal Pact',           cost: 5000000000,  desc: 'Ocean Deities produce 2× more.',         bought: false, type: 'building', target: 'deity',     mult: 2, req: () => getBldg('deity').count >= 25 },
+  { id: 'u_deity1',  name: 'Divine Offering',        cost: 400000000,   desc: 'Ocean Deities produce 2× more.',         bought: false, type: 'building', target: 'deity',     mult: 2, req: () => getBldg('deity').count >= 5 },
+  { id: 'u_deity2',  name: 'Eldritch Contract',      cost: 3000000000,  desc: 'Ocean Deities produce 2× more.',         bought: false, type: 'building', target: 'deity',     mult: 2, req: () => getBldg('deity').count >= 15 },
+  { id: 'u_deity3',  name: 'Abyssal Pact',           cost: 20000000000, desc: 'Ocean Deities produce 2× more.',         bought: false, type: 'building', target: 'deity',     mult: 2, req: () => getBldg('deity').count >= 25 },
   // ── Kraken upgrades ──
-  { id: 'u_krak1',   name: 'Extra Tentacles',        cost: 750000000,   desc: 'Krakens produce 2× more.',               bought: false, type: 'building', target: 'kraken',    mult: 2, req: () => getBldg('kraken').count >= 5 },
-  { id: 'u_krak2',   name: 'HR-Approved Whirlpool',  cost: 5000000000,  desc: 'Krakens produce 2× more.',               bought: false, type: 'building', target: 'kraken',    mult: 2, req: () => getBldg('kraken').count >= 15 },
+  { id: 'u_krak1',   name: 'Extra Tentacles',        cost: 3000000000,  desc: 'Krakens produce 2× more.',               bought: false, type: 'building', target: 'kraken',    mult: 2, req: () => getBldg('kraken').count >= 5 },
+  { id: 'u_krak2',   name: 'HR-Approved Whirlpool',  cost: 20000000000, desc: 'Krakens produce 2× more.',               bought: false, type: 'building', target: 'kraken',    mult: 2, req: () => getBldg('kraken').count >= 15 },
   // ── Fish Dimension upgrades ──
-  { id: 'u_fdim1',   name: 'Dimensional Import Tax', cost: 4000000000,  desc: 'Fish Dimensions produce 2× more.',       bought: false, type: 'building', target: 'fishdim',   mult: 2, req: () => getBldg('fishdim').count >= 5 },
-  { id: 'u_fdim2',   name: 'Inter-dimensional Bypass', cost: 25000000000, desc: 'Fish Dimensions produce 2× more.',     bought: false, type: 'building', target: 'fishdim',   mult: 2, req: () => getBldg('fishdim').count >= 15 },
+  { id: 'u_fdim1',   name: 'Dimensional Import Tax', cost: 20000000000, desc: 'Fish Dimensions produce 2× more.',       bought: false, type: 'building', target: 'fishdim',   mult: 2, req: () => getBldg('fishdim').count >= 5 },
+  { id: 'u_fdim2',   name: 'Inter-dimensional Bypass', cost: 120000000000, desc: 'Fish Dimensions produce 2× more.',   bought: false, type: 'building', target: 'fishdim',   mult: 2, req: () => getBldg('fishdim').count >= 15 },
   // ── Time Pond upgrades ──
-  { id: 'u_time1',   name: 'Paradox Insurance',      cost: 25000000000, desc: 'Time Ponds produce 2× more.',            bought: false, type: 'building', target: 'timepond',  mult: 2, req: () => getBldg('timepond').count >= 5 },
-  { id: 'u_time2',   name: 'Grandfather Clause',     cost: 150000000000, desc: 'Time Ponds produce 2× more.',           bought: false, type: 'building', target: 'timepond',  mult: 2, req: () => getBldg('timepond').count >= 15 },
+  { id: 'u_time1',   name: 'Paradox Insurance',      cost: 150000000000, desc: 'Time Ponds produce 2× more.',           bought: false, type: 'building', target: 'timepond',  mult: 2, req: () => getBldg('timepond').count >= 5 },
+  { id: 'u_time2',   name: 'Grandfather Clause',     cost: 900000000000, desc: 'Time Ponds produce 2× more.',           bought: false, type: 'building', target: 'timepond',  mult: 2, req: () => getBldg('timepond').count >= 15 },
   // ── Fish Star upgrades ──
-  { id: 'u_star1',   name: 'Solar Gill Panels',      cost: 160000000000, desc: 'Fish Stars produce 2× more.',           bought: false, type: 'building', target: 'fishstar',  mult: 2, req: () => getBldg('fishstar').count >= 5 },
-  { id: 'u_star2',   name: 'Stellar Compression',    cost: 1000000000000, desc: 'Fish Stars produce 2× more.',          bought: false, type: 'building', target: 'fishstar',  mult: 2, req: () => getBldg('fishstar').count >= 15 },
+  { id: 'u_star1',   name: 'Solar Gill Panels',      cost: 1000000000000, desc: 'Fish Stars produce 2× more.',          bought: false, type: 'building', target: 'fishstar',  mult: 2, req: () => getBldg('fishstar').count >= 5 },
+  { id: 'u_star2',   name: 'Stellar Compression',    cost: 6000000000000, desc: 'Fish Stars produce 2× more.',          bought: false, type: 'building', target: 'fishstar',  mult: 2, req: () => getBldg('fishstar').count >= 15 },
   // ── Global multipliers ──
-  { id: 'u_global1', name: 'Marine Biology Degree',  cost: 50000,       desc: 'All production ×1.5.',                   bought: false, type: 'global', mult: 1.5, req: () => state.allTimeFish >= 25000 },
-  { id: 'u_global2', name: 'Ocean Almanac',          cost: 500000,      desc: 'All production ×2.',                     bought: false, type: 'global', mult: 2,   req: () => state.allTimeFish >= 200000 },
-  { id: 'u_global3', name: "Poseidon's Blessing",    cost: 5000000,     desc: 'All production ×3.',                     bought: false, type: 'global', mult: 3,   req: () => state.allTimeFish >= 2000000 },
-  { id: 'u_global4', name: 'Oceanic Singularity',    cost: 75000000,    desc: 'All production ×2.',                     bought: false, type: 'global', mult: 2,   req: () => state.allTimeFish >= 25000000 },
-  { id: 'u_global5', name: 'The Fish Theorem',       cost: 1000000000,  desc: 'All production ×3.',                     bought: false, type: 'global', mult: 3,   req: () => state.allTimeFish >= 200000000 },
-  { id: 'u_global6', name: 'Unified Fish Theory',    cost: 20000000000, desc: 'All production ×5.',                     bought: false, type: 'global', mult: 5,   req: () => state.allTimeFish >= 2000000000 },
+  { id: 'u_global1', name: 'Marine Biology Degree',  cost: 150000,      desc: 'All production ×1.5.',                   bought: false, type: 'global', mult: 1.5, req: () => state.allTimeFish >= 75000 },
+  { id: 'u_global2', name: 'Ocean Almanac',          cost: 2000000,     desc: 'All production ×2.',                     bought: false, type: 'global', mult: 2,   req: () => state.allTimeFish >= 750000 },
+  { id: 'u_global3', name: "Poseidon's Blessing",    cost: 20000000,    desc: 'All production ×3.',                     bought: false, type: 'global', mult: 3,   req: () => state.allTimeFish >= 8000000 },
+  { id: 'u_global4', name: 'Oceanic Singularity',    cost: 300000000,   desc: 'All production ×2.',                     bought: false, type: 'global', mult: 2,   req: () => state.allTimeFish >= 100000000 },
+  { id: 'u_global5', name: 'The Fish Theorem',       cost: 4000000000,  desc: 'All production ×3.',                     bought: false, type: 'global', mult: 3,   req: () => state.allTimeFish >= 800000000 },
+  { id: 'u_global6', name: 'Unified Fish Theory',    cost: 100000000000, desc: 'All production ×5.',                    bought: false, type: 'global', mult: 5,   req: () => state.allTimeFish >= 8000000000 },
 ];
 
 const NEWS_LINES = [
@@ -204,21 +204,21 @@ function getAchievement(id) { return ACHIEVEMENTS.find(a => a.id === id); }
 function getBldg(id) { return BUILDINGS.find(b => b.id === id); }
 
 function buildingCost(b) {
-  return Math.ceil(b.baseCost * Math.pow(1.15, b.count));
+  return Math.ceil(b.baseCost * Math.pow(1.18, b.count));
 }
 
 // Total cost to buy `n` buildings starting from b.count
 function bulkCost(b, n) {
   if (n <= 0) return 0;
-  // sum of geometric series: baseCost * 1.15^count * (1.15^n - 1) / 0.15
-  return Math.ceil(b.baseCost * Math.pow(1.15, b.count) * (Math.pow(1.15, n) - 1) / 0.15);
+  // sum of geometric series: baseCost * 1.18^count * (1.18^n - 1) / 0.18
+  return Math.ceil(b.baseCost * Math.pow(1.18, b.count) * (Math.pow(1.18, n) - 1) / 0.18);
 }
 
 // How many of b the player can afford right now
 function maxAffordable(b) {
   if (state.fish < buildingCost(b)) return 0;
-  // n = floor(log(fish * 0.15 / (baseCost * 1.15^count) + 1) / log(1.15))
-  const n = Math.floor(Math.log(state.fish * 0.15 / (b.baseCost * Math.pow(1.15, b.count)) + 1) / Math.log(1.15));
+  // n = floor(log(fish * 0.18 / (baseCost * 1.18^count) + 1) / log(1.18))
+  const n = Math.floor(Math.log(state.fish * 0.18 / (b.baseCost * Math.pow(1.18, b.count)) + 1) / Math.log(1.18));
   return Math.max(0, n);
 }
 
