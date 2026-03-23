@@ -291,22 +291,23 @@ function getAchievement(id) { return ACHIEVEMENTS.find(a => a.id === id); }
 // ── Helpers ────────────────────────────────────────────────────────────────
 function getBldg(id) { return BUILDINGS.find(b => b.id === id); }
 
+const BCOST_RATE = 1.13;
+const BCOST_R1   = BCOST_RATE - 1; // 0.13
+
 function buildingCost(b) {
-  return Math.ceil(b.baseCost * Math.pow(1.18, b.count));
+  return Math.ceil(b.baseCost * Math.pow(BCOST_RATE, b.count));
 }
 
 // Total cost to buy `n` buildings starting from b.count
 function bulkCost(b, n) {
   if (n <= 0) return 0;
-  // sum of geometric series: baseCost * 1.18^count * (1.18^n - 1) / 0.18
-  return Math.ceil(b.baseCost * Math.pow(1.18, b.count) * (Math.pow(1.18, n) - 1) / 0.18);
+  return Math.ceil(b.baseCost * Math.pow(BCOST_RATE, b.count) * (Math.pow(BCOST_RATE, n) - 1) / BCOST_R1);
 }
 
 // How many of b the player can afford right now
 function maxAffordable(b) {
   if (state.fish < buildingCost(b)) return 0;
-  // n = floor(log(fish * 0.18 / (baseCost * 1.18^count) + 1) / log(1.18))
-  const n = Math.floor(Math.log(state.fish * 0.18 / (b.baseCost * Math.pow(1.18, b.count)) + 1) / Math.log(1.18));
+  const n = Math.floor(Math.log(state.fish * BCOST_R1 / (b.baseCost * Math.pow(BCOST_RATE, b.count)) + 1) / Math.log(BCOST_RATE));
   return Math.max(0, n);
 }
 
