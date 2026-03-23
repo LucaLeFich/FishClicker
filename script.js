@@ -194,7 +194,9 @@ const ACHIEVEMENTS = [
   { id: 'a_s16', name: 'Hello There',          icon: '👋', secret: true,  unlocked: false, desc: 'You found the secret fish. It was just sitting there, waiting.', check: () => false }, // triggered by title fish click
   { id: 'a_s17', name: 'Stop the Presses',     icon: '📰', secret: true,  unlocked: false, desc: 'You clicked Breaking News. Was it actually breaking?',           check: () => false }, // triggered by news label click
   { id: 'a_s18', name: 'Click Me',             icon: '👆', secret: false, unlocked: false, desc: 'I wonder how to unlock it...',                                  check: () => false }, // triggered by clicking the card
-  { id: 'a_s19', name: 'Card Hoarder',         icon: '🃏', secret: true,  unlocked: false, desc: 'Hold more than 4 cards in a single hand. Were you counting on a miracle?', check: () => false }, // triggered in bjHit
+  { id: 'a_s19', name: 'Card Hoarder',         icon: '💀', secret: true,  unlocked: false, desc: 'Lose with more than 4 cards in a single hand. Were you counting on a miracle?',          check: () => false }, // triggered on 5+ card loss
+  { id: 'a_s20', name: 'Card Hoarder: Push',  icon: '😐', secret: true,  unlocked: false, desc: "Push with more than 4 cards in a single hand. That's unfortunate.",                                                      check: () => false }, // triggered on 5+ card push
+  { id: 'a_s21', name: 'Card Hoarder: Win',   icon: '🤯', secret: true,  unlocked: false, desc: 'Win with more than 4 cards in a single hand. Against all odds. Statistically baffling.',              check: () => false }, // triggered on 5+ card win
   // Gambling
   { id: 'a_g1',  name: 'Feeling Lucky',        icon: '🎰', secret: false, unlocked: false, desc: 'Place your first bet in the Gambling Den.',                   check: () => false }, // triggered
   { id: 'a_g3',  name: 'All In',               icon: '💸', secret: false, unlocked: false, desc: 'Go all-in and win the hand.',                                 check: () => false }, // triggered
@@ -737,6 +739,7 @@ const BJ = {
   consecutiveWins: 0,
   allInBet: false,
   betRaw: null,        // tracks selected bet option key
+  handHad5Plus: false, // tracks if active hand reached 5+ cards this round
 };
 
 function bjActiveHand() { return BJ.activeHand === 0 ? BJ.playerHand : BJ.splitHand; }
@@ -839,6 +842,7 @@ function bjDeal() {
   BJ.splitHand = [];
   BJ.splitBet = 0;
   BJ.activeHand = 0;
+  BJ.handHad5Plus = false;
   BJ.state = 'playing';
   bjRender(true);
   bjSetPlaying(true);
@@ -854,7 +858,7 @@ function bjHit() {
   bjRender(true);
   document.getElementById('bj-double').disabled = true;
   document.getElementById('bj-split').disabled = true;
-  if (bjActiveHand().length > 4) triggerAchievement('a_s19');
+  if (bjActiveHand().length > 4) BJ.handHad5Plus = true;
   const s = bjScore(bjActiveHand());
   if (s > 21 || s === 21) bjAdvance();
 }
@@ -964,6 +968,14 @@ function bjFinishSplit(dealerScore) {
   const splitNet = totalPayout - totalBet;
   if (splitNet > state.bjBiggestWin) state.bjBiggestWin = splitNet;
   if (BJ.consecutiveWins > state.bjBestStreak) state.bjBestStreak = BJ.consecutiveWins;
+  [[BJ.playerHand], [BJ.splitHand]].forEach(([hand]) => {
+    if (hand.length <= 4) return;
+    const s = bjScore(hand);
+    if (s > 21)                                  triggerAchievement('a_s19');
+    else if (dealerScore > 21 || s > dealerScore) triggerAchievement('a_s21');
+    else if (s === dealerScore)                   triggerAchievement('a_s20');
+    else                                          triggerAchievement('a_s19');
+  });
   BJ.splitHand = [];
   BJ.splitBet = 0;
   BJ.activeHand = 0;
@@ -1019,6 +1031,11 @@ function bjFinish(result) {
   const bjNet = payout - BJ.bet;
   if (bjNet > state.bjBiggestWin) state.bjBiggestWin = bjNet;
   if (BJ.consecutiveWins > state.bjBestStreak) state.bjBestStreak = BJ.consecutiveWins;
+  if (BJ.handHad5Plus) {
+    if (result === 'win' || result === 'blackjack') triggerAchievement('a_s21');
+    else if (result === 'push')                     triggerAchievement('a_s20');
+    else                                            triggerAchievement('a_s19');
+  }
   BJ.allInBet = false;
   if (BJ.betRaw) bjSetBet(BJ.betRaw); else { BJ.bet = BJ.originalBet; document.getElementById('bj-current-bet').textContent = `Bet: ${fmt(BJ.bet)} 🐟`; }
   checkAchievements();
