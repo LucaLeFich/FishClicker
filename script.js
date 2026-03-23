@@ -194,6 +194,7 @@ const ACHIEVEMENTS = [
   { id: 'a_s16', name: 'Hello There',          icon: '👋', secret: true,  unlocked: false, desc: 'You found the secret fish. It was just sitting there, waiting.', check: () => false }, // triggered by title fish click
   { id: 'a_s17', name: 'Stop the Presses',     icon: '📰', secret: true,  unlocked: false, desc: 'You clicked Breaking News. Was it actually breaking?',           check: () => false }, // triggered by news label click
   { id: 'a_s18', name: 'Click Me',             icon: '👆', secret: false, unlocked: false, desc: 'I wonder how to unlock it...',                                  check: () => false }, // triggered by clicking the card
+  { id: 'a_s19', name: 'Card Hoarder',         icon: '🃏', secret: true,  unlocked: false, desc: 'Hold more than 4 cards in a single hand. Were you counting on a miracle?', check: () => false }, // triggered in bjHit
   // Gambling
   { id: 'a_g1',  name: 'Feeling Lucky',        icon: '🎰', secret: false, unlocked: false, desc: 'Place your first bet in the Gambling Den.',                   check: () => false }, // triggered
   { id: 'a_g2',  name: 'Blackjack!',           icon: '🃏', secret: false, unlocked: false, desc: 'Get a natural Blackjack (21 on first two cards).',            check: () => false }, // triggered
@@ -852,6 +853,7 @@ function bjHit() {
   bjRender(true);
   document.getElementById('bj-double').disabled = true;
   document.getElementById('bj-split').disabled = true;
+  if (bjActiveHand().length > 4) triggerAchievement('a_s19');
   const s = bjScore(bjActiveHand());
   if (s > 21 || s === 21) bjAdvance();
 }
