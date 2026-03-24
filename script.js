@@ -289,7 +289,8 @@ const ACHIEVEMENTS = [
 function getAchievement(id) { return ACHIEVEMENTS.find(a => a.id === id); }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
-function getBldg(id) { return BUILDINGS.find(b => b.id === id); }
+const BUILDINGS_MAP = new Map(BUILDINGS.map(b => [b.id, b]));
+function getBldg(id) { return BUILDINGS_MAP.get(id); }
 
 const BCOST_RATE = 1.13;
 const BCOST_R1   = BCOST_RATE - 1; // 0.13
@@ -371,32 +372,34 @@ function clickFps() {
 }
 
 // ── FPS calculation ────────────────────────────────────────────────────────
-function calcFps() {
-  // per-building multipliers
+// Cache of per-building fps multipliers — invalidated when an upgrade is bought
+let _effectiveFpsCache = null;
+function _buildEffectiveFpsCache() {
   const bMult = {};
   BUILDINGS.forEach(b => bMult[b.id] = 1);
   let globalMult = 1;
-
-  UPGRADES.filter(u => u.bought).forEach(u => {
+  UPGRADES.forEach(u => {
+    if (!u.bought) return;
     if (u.type === 'building') bMult[u.target] *= u.mult;
-    if (u.type === 'global')   globalMult        *= u.mult;
+    if (u.type === 'global')   globalMult       *= u.mult;
   });
+  const cache = {};
+  BUILDINGS.forEach(b => { cache[b.id] = b.baseFps * bMult[b.id] * globalMult; });
+  _effectiveFpsCache = cache;
+}
+function invalidateEffectiveFpsCache() { _effectiveFpsCache = null; }
 
+function calcFps() {
+  if (!_effectiveFpsCache) _buildEffectiveFpsCache();
   let total = 0;
-  BUILDINGS.forEach(b => {
-    total += b.count * b.baseFps * bMult[b.id] * globalMult;
-  });
+  BUILDINGS.forEach(b => { total += b.count * _effectiveFpsCache[b.id]; });
   total += state.rockyCount * 10000;
   state.fishPerSec = total;
 }
 
 function effectiveFps(b) {
-  let mult = 1;
-  UPGRADES.filter(u => u.bought).forEach(u => {
-    if (u.type === 'building' && u.target === b.id) mult *= u.mult;
-    if (u.type === 'global') mult *= u.mult;
-  });
-  return b.baseFps * mult;
+  if (!_effectiveFpsCache) _buildEffectiveFpsCache();
+  return _effectiveFpsCache[b.id];
 }
 
 // ── Rocky ──────────────────────────────────────────────────────────────────
@@ -575,37 +578,59 @@ function renderBuildings() {
       <div class="b-count-wrap">${buyQtyHtml}<span class="b-count">${b.count}</span></div>`;
     list.appendChild(row);
   });
+  cacheBuildingEls();
 }
 
-// Lightweight update used in the game loop — no DOM rebuild
-function updateBuildingAffordability() {
-  document.querySelectorAll('.building-row').forEach(row => {
-    const b = BUILDINGS.find(b => b.id === row.dataset.id);
-    if (!b) return;
+// ── Building DOM element cache ──────────────────────────────────────────────
+// Cached after every renderBuildings() call so the game loop never queries the DOM.
+let _bEls = {}; // { [b.id]: { row, costEl, wrap, iconsEl } }
+function cacheBuildingEls() {
+  _bEls = {};
+  BUILDINGS.forEach(b => {
+    const row = document.querySelector(`.building-row[data-id="${b.id}"]`);
+    if (!row) return;
+    _bEls[b.id] = { row, costEl: row.querySelector('.b-cost'), wrap: row.querySelector('.b-count-wrap'), iconsEl: row.querySelector('.b-icons-bg') };
+  });
+}
+
+// Full update — called after a purchase (cost text, count, icons all change)
+function updateBuildingsFull() {
+  BUILDINGS.forEach(b => {
+    const els = _bEls[b.id];
+    if (!els) return;
     const qty = resolvedQty(b);
     const cost = qty > 0 ? bulkCost(b, qty) : buildingCost(b);
-    const canAfford = qty > 0 && state.fish >= cost;
-    row.classList.toggle('locked', !canAfford);
-    const costEl = row.querySelector('.b-cost');
-    if (costEl) {
+    els.row.classList.toggle('locked', !(qty > 0 && state.fish >= cost));
+    if (els.costEl) {
       const label = qty > 1 ? `×${qty} ` : '';
-      costEl.innerHTML = `🐟 ${label}${fmt(cost)} &nbsp;|&nbsp; +${fmt(effectiveFps(b))}/s each${state.fishPerSec > 0 && b.count > 0 ? ` <span class="b-pct">(${(b.count * effectiveFps(b) / state.fishPerSec * 100).toFixed(1)}%)</span>` : ''}`;
+      els.costEl.innerHTML = `🐟 ${label}${fmt(cost)} &nbsp;|&nbsp; +${fmt(effectiveFps(b))}/s each${state.fishPerSec > 0 && b.count > 0 ? ` <span class="b-pct">(${(b.count * effectiveFps(b) / state.fishPerSec * 100).toFixed(1)}%)</span>` : ''}`;
     }
-    const wrap = row.querySelector('.b-count-wrap');
-    if (wrap) {
-      const buyQtyEl = wrap.querySelector('.b-buy-qty');
+    if (els.wrap) {
+      const buyQtyEl = els.wrap.querySelector('.b-buy-qty');
       if (qty > 1) {
         if (buyQtyEl) buyQtyEl.textContent = `+${qty}`;
-        else wrap.insertAdjacentHTML('afterbegin', `<span class="b-buy-qty">+${qty}</span>`);
+        else els.wrap.insertAdjacentHTML('afterbegin', `<span class="b-buy-qty">+${qty}</span>`);
       } else if (buyQtyEl) {
         buyQtyEl.remove();
       }
+      const countEl = els.wrap.querySelector('.b-count');
+      if (countEl) countEl.textContent = b.count;
     }
-    const iconsEl = row.querySelector('.b-icons-bg');
-    if (iconsEl) {
+    if (els.iconsEl) {
       const desired = Math.min(b.count, MAX_BG_ICONS);
-      if (iconsEl.childElementCount !== desired) iconsEl.innerHTML = buildIconsBgHtml(b);
+      if (els.iconsEl.childElementCount !== desired) els.iconsEl.innerHTML = buildIconsBgHtml(b);
     }
+  });
+}
+
+// Game-loop update — only toggles the locked class, no innerHTML writes
+function updateBuildingAffordability() {
+  BUILDINGS.forEach(b => {
+    const els = _bEls[b.id];
+    if (!els) return;
+    const qty = resolvedQty(b);
+    const cost = qty > 0 ? bulkCost(b, qty) : buildingCost(b);
+    els.row.classList.toggle('locked', !(qty > 0 && state.fish >= cost));
   });
 }
 
@@ -634,6 +659,7 @@ function renderUpgrades() {
 }
 
 function maybeRenderUpgrades() {
+  if (UPGRADES.every(u => u.bought)) return;
   const snap = upgradeSnapshot();
   if (snap !== lastUpgradeSnapshot) {
     lastUpgradeSnapshot = snap;
@@ -650,9 +676,7 @@ function buyBuilding(b) {
   state.fish -= cost;
   b.count += qty;
   calcFps();
-  renderBuildings();
-  renderUpgrades();
-  lastUpgradeSnapshot = upgradeSnapshot();
+  updateBuildingsFull();
   renderStats();
   // Secret achievement checks
   if (qty >= 100) triggerAchievement('a_s6');        // Overkill
@@ -664,6 +688,7 @@ function buyUpgrade(u) {
   if (u.bought || state.fish < u.cost) return;
   state.fish -= u.cost;
   u.bought = true;
+  invalidateEffectiveFpsCache();
   if (u.type === 'click') calcClickPower();
   calcFps();
   renderUpgrades();
@@ -1347,9 +1372,16 @@ function rlDrawWheel(highlighted = new Set(), pulse = 1) {
 
 function rlStartPulse() {
   if (rlPulseRAF) cancelAnimationFrame(rlPulseRAF);
+  rlPulseRAF = null;
+  // Don't run when the gambling overlay is hidden
+  if (document.getElementById('gamble-overlay').classList.contains('hidden')) return;
   const highlighted = rlHighlightNums(RL.betType);
   function frame() {
     if (RL.spinning) return; // pause during spin
+    if (document.getElementById('gamble-overlay').classList.contains('hidden')) {
+      rlPulseRAF = null;
+      return;
+    }
     const raw = (Math.sin(Date.now() / 650) + 1) / 2;   // faster cycle
     const pulse = Math.pow(raw, 6);                       // sharp spike — dim most of the time, quick bright flash
     rlDrawWheel(highlighted, pulse);
@@ -1495,6 +1527,7 @@ async function rlSpin() {
 // ── Game loop ──────────────────────────────────────────────────────────────
 let lastTime = null;
 let renderAccum = 0;
+let achAccum = 0;
 
 function gameLoop(timestamp) {
   if (!lastTime) lastTime = timestamp;
@@ -1512,6 +1545,11 @@ function gameLoop(timestamp) {
     updateBuildingAffordability();
     maybeRenderUpgrades();
     checkMilestones();
+  }
+
+  achAccum += dt;
+  if (achAccum >= 0.5) {
+    achAccum = 0;
     checkAchievements();
   }
 
@@ -1698,6 +1736,7 @@ function initListeners() {
   document.getElementById('gamble-btn').addEventListener('click', () => {
     updateBetButtons();
     document.getElementById('gamble-overlay').classList.toggle('hidden');
+    if (!document.getElementById('gamble-overlay').classList.contains('hidden')) rlStartPulse();
   });
   document.getElementById('gamble-close').addEventListener('click', () => {
     document.getElementById('gamble-overlay').classList.add('hidden');
